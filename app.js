@@ -239,10 +239,14 @@ $('#generate-button').addEventListener('click', async () => {
       state.description = metadata.description.slice(0, 2000);
       descriptionInput.value = state.description;
     }
-    if (metadata?.image) {
-      state.image = metadata.image;
-      state.images = [metadata.image];
+    const extractedImages = Array.isArray(metadata?.images)
+      ? metadata.images.filter(Boolean)
+      : (metadata?.image ? [metadata.image] : []);
+    if (extractedImages.length) {
+      state.images = [...new Set(extractedImages)].slice(0, 6);
+      state.image = state.images[0];
     }
+    if (metadata?.platformLabel) sourceData[state.source].name = metadata.platformLabel.toUpperCase();
     showToast(metadata?.title ? '已提取公开内容，可继续编辑' : '平台未开放元数据，已载入卡片模板');
   } catch {
     showToast('平台未开放元数据，已载入卡片模板');
