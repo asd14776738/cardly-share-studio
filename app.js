@@ -230,7 +230,8 @@ $('#generate-button').addEventListener('click', async () => {
   sourceData[state.source].name = host;
   try {
     const response = await fetch('/api/extract?url=' + encodeURIComponent(value));
-    const metadata = response.ok ? await response.json() : null;
+    const metadata = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(metadata?.detail || metadata?.error || '提取失败');
     if (metadata?.title) {
       state.title = metadata.title;
       titleInput.value = state.title;
@@ -247,9 +248,15 @@ $('#generate-button').addEventListener('click', async () => {
       state.image = state.images[0];
     }
     if (metadata?.platformLabel) sourceData[state.source].name = metadata.platformLabel.toUpperCase();
-    showToast(metadata?.title ? '已提取公开内容，可继续编辑' : '平台未开放元数据，已载入卡片模板');
+    if (metadata?.status === 'login_required') {
+      showToast(`${metadata.platformLabel || '该平台'}限制匿名访问，可上传截图继续排版`);
+    } else if (state.images.length > 1) {
+      showToast(`已提取正文和 ${state.images.length} 张图片，可继续编辑`);
+    } else {
+      showToast(metadata?.title ? '已提取公开内容，可继续编辑' : '未找到公开内容，可手动编辑卡片');
+    }
   } catch {
-    showToast('平台未开放元数据，已载入卡片模板');
+    showToast('暂时无法提取该链接，请重试或上传截图');
   } finally {
     updateCard();
     button.classList.remove('loading');
