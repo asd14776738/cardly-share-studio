@@ -1,3 +1,24 @@
+function svgIcon(body) {
+  return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(body);
+}
+
+const platformIcons = {
+  x: svgIcon('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#111" d="M18.9 2h3.7l-8.1 9.3L24 22h-7.4l-5.8-7.6L4.2 22H.5l8.6-9.8L0 2h7.6l5.3 6.9L18.9 2Zm-1.3 18h2L6.5 3.9H4.3L17.6 20Z"/></svg>'),
+  weibo: svgIcon('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><ellipse cx="11" cy="14" rx="9" ry="6.5" fill="#e6162d"/><ellipse cx="10" cy="14" rx="5" ry="3.4" fill="#fff"/><circle cx="9" cy="13.5" r="1.7" fill="#111"/><path d="M15 7c3-1 5 1 5 3" fill="none" stroke="#f5c400" stroke-width="2" stroke-linecap="round"/></svg>'),
+  telegram: svgIcon('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#229ed9"/><path fill="#fff" d="m5 11.5 13-5-2.3 11.2c-.2.8-.8 1-1.5.6l-3.5-2.6-1.7 1.7c-.2.2-.3.3-.7.3l.3-3.6 6.5-5.9c.3-.3-.1-.4-.4-.2l-8 5-3.4-1.1c-.7-.2-.7-.7.2-1Z"/></svg>'),
+  instagram: svgIcon('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#d62976"/><rect x="5" y="5" width="14" height="14" rx="4" fill="none" stroke="#fff" stroke-width="2"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="#fff" stroke-width="2"/><circle cx="17" cy="7" r="1.1" fill="#fff"/></svg>')
+};
+
+function iconForUrl(value) {
+  const parsed = new URL(value);
+  const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+  if (host === 'x.com' || host === 'twitter.com') return platformIcons.x;
+  if (host === 'weibo.com' || host.endsWith('.weibo.com')) return platformIcons.weibo;
+  if (host === 't.me' || host === 'telegram.org') return platformIcons.telegram;
+  if (host === 'instagram.com' || host.endsWith('.instagram.com')) return platformIcons.instagram;
+  return new URL('/favicon.ico', parsed.origin).href;
+}
+
 const defaults = {
   source: 'web',
   ratio: 'square',
@@ -9,7 +30,7 @@ const defaults = {
   image: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1600&q=88'
 };
 
-defaults.icon = new URL('/favicon.ico', defaults.url).href;
+defaults.icon = iconForUrl(defaults.url);
 
 const sourceData = {
   web: {
@@ -23,7 +44,7 @@ const sourceData = {
   telegram: {
     hint: '粘贴公开频道或公开消息链接',
     placeholder: 'https://t.me/channel/123',
-    name: 'TELEGRAM · @FUTURESPACE', icon: '↗', iconUrl: 'https://telegram.org/favicon.ico', kicker: 'CHANNEL POST · 2 HOURS AGO',
+    name: 'TELEGRAM · @FUTURESPACE', icon: '↗', iconUrl: iconForUrl('https://t.me'), kicker: 'CHANNEL POST · 2 HOURS AGO',
     title: '城市不是建成的，它每天都在被重新协商。',
     description: '从街角座椅到夜间照明，微小的公共决策正在改变我们感受城市的方式。',
     image: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1600&q=88'
@@ -31,7 +52,7 @@ const sourceData = {
   x: {
     hint: '粘贴公开帖子链接，自动提取作者和正文',
     placeholder: 'https://x.com/user/status/…',
-    name: 'X · @DESIGNNOTES', icon: '𝕏', iconUrl: 'https://x.com/favicon.ico', kicker: 'POST · JUL 11, 2026',
+    name: 'X · @DESIGNNOTES', icon: '𝕏', iconUrl: iconForUrl('https://x.com'), kicker: 'POST · JUL 11, 2026',
     title: 'Good design makes complexity feel inevitable.',
     description: 'The best interfaces do not remove depth. They give it rhythm, hierarchy and a human pace.',
     image: 'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&w=1600&q=88'
@@ -39,7 +60,7 @@ const sourceData = {
   instagram: {
     hint: '粘贴公开帖子或 Reel 链接',
     placeholder: 'https://www.instagram.com/p/…',
-    name: 'INSTAGRAM · @SLOW.WEEKEND', icon: '◎', iconUrl: 'https://www.instagram.com/favicon.ico', kicker: 'PHOTO · SHANGHAI',
+    name: 'INSTAGRAM · @SLOW.WEEKEND', icon: '◎', iconUrl: iconForUrl('https://www.instagram.com'), kicker: 'PHOTO · SHANGHAI',
     title: '週末，在城市里收集光影。',
     description: '穿过旧街区，玻璃、树影和晾晒的衣服让平常的一天有了电影感。',
     image: 'https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?auto=format&fit=crop&w=1600&q=88'
@@ -154,7 +175,7 @@ $('#generate-button').addEventListener('click', async () => {
   button.classList.add('loading');
   button.textContent = '正在生成…';
   state.url = value;
-  state.icon = new URL('/favicon.ico', value).href;
+  state.icon = iconForUrl(value);
   const host = new URL(value).hostname.replace(/^www\./, '').toUpperCase();
   sourceData[state.source].name = state.source === 'web' ? host : sourceData[state.source].name;
   try {
