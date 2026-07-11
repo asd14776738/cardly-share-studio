@@ -56,7 +56,7 @@ export default {
     return new Response(file[1], {
       headers: {
         'content-type': file[0],
-        'cache-control': url.pathname === '/' ? 'no-cache' : 'public, max-age=3600',
+        'cache-control': 'no-cache, no-store, must-revalidate',
         'x-content-type-options': 'nosniff',
       },
     });

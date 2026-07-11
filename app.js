@@ -119,7 +119,8 @@ function renderMediaGallery() {
 function updateCard() {
   const density = contentDensity(state.description);
   const role = titleRole(state.title);
-  card.className = `share-card theme-${state.theme} ratio-${state.ratio} layout-${state.layout} source-${state.source} density-${density} title-${role}`;
+  const mediaState = (state.images || []).some(Boolean) ? 'has-media' : 'no-media';
+  card.className = `share-card theme-${state.theme} ratio-${state.ratio} layout-${state.layout} source-${state.source} density-${density} title-${role} ${mediaState}`;
   $('#preview-card-title').textContent = state.title;
   $('#preview-card-description').textContent = state.description;
   $('#source-name').textContent = sourceData[state.source].name;
@@ -223,8 +224,10 @@ $('#generate-button').addEventListener('click', async () => {
   button.textContent = '正在生成…';
   state.url = value;
   state.icon = iconForUrl(value);
+  state.image = '';
+  state.images = [];
   const host = new URL(value).hostname.replace(/^www\./, '').toUpperCase();
-  sourceData[state.source].name = state.source === 'web' ? host : sourceData[state.source].name;
+  sourceData[state.source].name = host;
   try {
     const response = await fetch('/api/extract?url=' + encodeURIComponent(value));
     const metadata = response.ok ? await response.json() : null;
@@ -345,7 +348,8 @@ async function downloadAutoCard() {
   const imageHeights = loadedImages.map(image => Math.min(640, Math.max(260, Math.round(contentW * image.height / image.width))));
   const mediaHeight = imageHeights.reduce((sum, value) => sum + value, 0) + Math.max(0, imageHeights.length - 1) * 18;
   const contentHeight = 86 + 36 + titleLines.length * titleLine + 24 + bodyLines.length * bodyLine + (mediaHeight ? 38 + mediaHeight : 0) + 110;
-  const height = Math.min(7600, Math.max(1180, outer * 2 + surfacePad * 2 + contentHeight));
+  const minimumHeight = loadedImages.length ? 1180 : 820;
+  const height = Math.min(7600, Math.max(minimumHeight, outer * 2 + surfacePad * 2 + contentHeight));
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -430,8 +434,15 @@ async function downloadAutoCard() {
   ctx.stroke();
   ctx.font = '500 18px Arial, sans-serif';
   ctx.fillText(new Date().toLocaleDateString('zh-CN') + ' · CARDLY', contentX, footerY);
-  ctx.textAlign = 'right';
-  ctx.fillText('阅读原文 ↗', width - contentX, footerY);
+  try {
+    const qr = await loadImage($('.qr-code').src);
+    ctx.globalAlpha = 1;
+    ctx.drawImage(qr, width - contentX - 72, footerY - 12, 72, 72);
+  } catch {}
+  ctx.globalAlpha = .3;
+  ctx.textAlign = 'center';
+  ctx.font = '600 15px Arial, sans-serif';
+  ctx.fillText('CARDLY · 制作卡片', width / 2, height - 26);
   ctx.textAlign = 'left';
   ctx.globalAlpha = 1;
   canvas.toBlob(blob => {
