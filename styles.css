@@ -122,22 +122,24 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .share-card.ratio-wide .card-copy { grid-column: 2; align-self: center; }
 .share-card.ratio-wide .card-footer { grid-column: 2; }
 .share-card.ratio-wide .cover-wrap img { height: 100%; }
-.share-card.ratio-wide .card-copy h3 { font-size: clamp(18px, 2.1vw, 31px); }
-.share-card.ratio-wide .card-copy p { display: none; }
+.share-card.ratio-wide .card-copy h3 { font-size: clamp(10px, .85vw, 13px); }
+.share-card.ratio-wide .card-copy > p { font-size: clamp(14px, 1.25vw, 18px); -webkit-line-clamp: 4; }
 .share-card.ratio-portrait { aspect-ratio: 4/5; width: min(100%, 430px); grid-template-rows: auto 1.3fr auto auto; }
 .share-card.layout-minimal .cover-index, .share-card.layout-minimal .card-kicker, .share-card.layout-minimal .mini-code { display: none; }
 .share-card.layout-minimal { gap: 17px; }
 .card-topline { display: flex; align-items: center; justify-content: space-between; font-size: 9px; letter-spacing: .13em; font-weight: 600; }
 .source-brand { display: flex; align-items: center; gap: 7px; }
-.source-brand-icon { width: 19px; height: 19px; display: inline-grid; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-size: 10px; }
+.source-brand-icon { width: 19px; height: 19px; display: inline-grid; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-size: 10px; overflow: hidden; }
+.source-brand-icon img { width: 12px; height: 12px; display: block; object-fit: contain; }
+.source-brand-fallback { line-height: 1; }
 .card-number { opacity: .75; }
 .cover-wrap { min-height: 0; position: relative; overflow: hidden; background: rgba(255,255,255,.15); }
 .cover-wrap img { display: block; width: 100%; height: 100%; min-height: 0; object-fit: cover; filter: saturate(.8) contrast(1.05); }
 .cover-index { position: absolute; right: 0; bottom: 0; width: 39px; height: 39px; display: grid; place-items: center; color: #111; background: #fff; font-size: 10px; font-weight: 700; }
 .card-copy { min-width: 0; }
 .card-kicker { margin: 0 0 8px !important; font-size: 8px !important; letter-spacing: .14em; opacity: .72; }
-.card-copy h3 { max-width: 95%; margin: 0; font-family: 'Noto Sans SC', sans-serif; font-size: clamp(23px, 2.6vw, 37px); line-height: 1.18; letter-spacing: -.045em; font-weight: 600; }
-.card-copy > p { max-width: 85%; margin: 10px 0 0; font-size: 10px; line-height: 1.55; opacity: .78; }
+.card-copy h3 { max-width: 88%; margin: 0; font-family: 'Noto Sans SC', sans-serif; font-size: clamp(11px, 1vw, 14px); line-height: 1.35; letter-spacing: -.01em; font-weight: 600; opacity: .68; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.card-copy > p { max-width: 95%; margin: 10px 0 0; font-family: 'Noto Sans SC', sans-serif; font-size: clamp(17px, 1.8vw, 23px); line-height: 1.38; letter-spacing: -.025em; font-weight: 560; opacity: 1; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
 .card-footer { border-top: 1px solid currentColor; padding-top: 12px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 9px; font-size: 8px; opacity: .87; }
 .mini-code { width: 24px; height: 24px; background: currentColor; padding: 3px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; }
 .mini-code i { background: #2251ff; }
@@ -193,9 +195,10 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
   .preview-stage { min-height: 460px; padding: 20px; }
   .share-card { padding: 20px; gap: 14px; }
   .share-card.ratio-wide { padding: 17px; gap: 12px 15px; }
-  .share-card.ratio-wide .card-copy h3 { font-size: 17px; }
-  .card-copy h3 { font-size: 24px; }
-  .card-copy > p { display: none; }
+  .share-card.ratio-wide .card-copy h3 { font-size: 9px; }
+  .share-card.ratio-wide .card-copy > p { font-size: 12px; }
+  .card-copy h3 { font-size: 11px; }
+  .card-copy > p { font-size: 17px; -webkit-line-clamp: 3; }
   .recent-grid { grid-template-columns: 1fr; }
   .recent-card { aspect-ratio: 1.9; }
   .recent-card strong { font-size: 22px; }

@@ -9,11 +9,13 @@ const defaults = {
   image: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1600&q=88'
 };
 
+defaults.icon = new URL('/favicon.ico', defaults.url).href;
+
 const sourceData = {
   web: {
     hint: '支持文章、作品集、产品页等公开网页',
     placeholder: 'https://example.com/article',
-    name: 'ARCHDAILY.CN', icon: '⌁', kicker: 'ARCHITECTURE · 6 MIN READ',
+    name: 'ARCHDAILY.CN', icon: '⌁', iconUrl: defaults.icon, kicker: 'ARCHITECTURE · 6 MIN READ',
     title: '在海风与山影之间，重新想象公共空间',
     description: '一座面向海岸的文化建筑，以层叠露台连接城市生活与自然景观。',
     image: defaults.image
@@ -21,7 +23,7 @@ const sourceData = {
   telegram: {
     hint: '粘贴公开频道或公开消息链接',
     placeholder: 'https://t.me/channel/123',
-    name: 'TELEGRAM · @FUTURESPACE', icon: '↗', kicker: 'CHANNEL POST · 2 HOURS AGO',
+    name: 'TELEGRAM · @FUTURESPACE', icon: '↗', iconUrl: 'https://telegram.org/favicon.ico', kicker: 'CHANNEL POST · 2 HOURS AGO',
     title: '城市不是建成的，它每天都在被重新协商。',
     description: '从街角座椅到夜间照明，微小的公共决策正在改变我们感受城市的方式。',
     image: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1600&q=88'
@@ -29,7 +31,7 @@ const sourceData = {
   x: {
     hint: '粘贴公开帖子链接，自动提取作者和正文',
     placeholder: 'https://x.com/user/status/…',
-    name: 'X · @DESIGNNOTES', icon: '𝕏', kicker: 'POST · JUL 11, 2026',
+    name: 'X · @DESIGNNOTES', icon: '𝕏', iconUrl: 'https://x.com/favicon.ico', kicker: 'POST · JUL 11, 2026',
     title: 'Good design makes complexity feel inevitable.',
     description: 'The best interfaces do not remove depth. They give it rhythm, hierarchy and a human pace.',
     image: 'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&w=1600&q=88'
@@ -37,7 +39,7 @@ const sourceData = {
   instagram: {
     hint: '粘贴公开帖子或 Reel 链接',
     placeholder: 'https://www.instagram.com/p/…',
-    name: 'INSTAGRAM · @SLOW.WEEKEND', icon: '◎', kicker: 'PHOTO · SHANGHAI',
+    name: 'INSTAGRAM · @SLOW.WEEKEND', icon: '◎', iconUrl: 'https://www.instagram.com/favicon.ico', kicker: 'PHOTO · SHANGHAI',
     title: '週末，在城市里收集光影。',
     description: '穿过旧街区，玻璃、树影和晾晒的衣服让平常的一天有了电影感。',
     image: 'https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?auto=format&fit=crop&w=1600&q=88'
@@ -65,7 +67,12 @@ function updateCard() {
   $('#preview-card-title').textContent = state.title;
   $('#preview-card-description').textContent = state.description;
   $('#source-name').textContent = sourceData[state.source].name;
-  $('.source-brand-icon').textContent = sourceData[state.source].icon;
+  const sourceIcon = $('#source-icon-image');
+  const sourceFallback = $('.source-brand-fallback');
+  sourceFallback.textContent = sourceData[state.source].icon;
+  sourceIcon.hidden = !state.icon;
+  sourceFallback.hidden = Boolean(state.icon);
+  sourceIcon.src = state.icon || '';
   $('#card-kicker').textContent = sourceData[state.source].kicker;
   $('#cover-image').src = state.image;
   $('#char-count').textContent = `${state.description.length} / 120`;
@@ -85,6 +92,7 @@ function selectSource(source, applyPreset = true) {
     state.title = sourceData[source].title;
     state.description = sourceData[source].description;
     state.image = sourceData[source].image;
+    state.icon = sourceData[source].iconUrl;
     titleInput.value = state.title;
     descriptionInput.value = state.description;
   }
@@ -133,6 +141,11 @@ $('#image-upload').addEventListener('change', event => {
   reader.readAsDataURL(file);
 });
 
+$('#source-icon-image').addEventListener('error', () => {
+  $('#source-icon-image').hidden = true;
+  $('.source-brand-fallback').hidden = false;
+});
+
 $('#generate-button').addEventListener('click', async () => {
   const button = $('#generate-button');
   const value = urlInput.value.trim();
@@ -141,6 +154,7 @@ $('#generate-button').addEventListener('click', async () => {
   button.classList.add('loading');
   button.textContent = '正在生成…';
   state.url = value;
+  state.icon = new URL('/favicon.ico', value).href;
   const host = new URL(value).hostname.replace(/^www\./, '').toUpperCase();
   sourceData[state.source].name = state.source === 'web' ? host : sourceData[state.source].name;
   try {
@@ -250,9 +264,12 @@ async function downloadCard() {
   const textW = isWide ? width-textX-pad : width-pad*2;
   ctx.fillStyle = light ? '#111216' : '#ffffff';
   ctx.globalAlpha=.7; ctx.font = `600 ${Math.round(width*(isWide?.009:.011))}px Arial, sans-serif`; ctx.fillText(sourceData[state.source].kicker, textX, textY); ctx.globalAlpha=1;
-  ctx.font = `600 ${Math.round(width*(isWide?.033:.055))}px "Microsoft YaHei", sans-serif`;
-  const afterTitle = wrapText(ctx,state.title,textX,textY+pad*.45,textW,Math.round(width*(isWide?.041:.067)),isWide?4:3);
-  if (state.layout !== 'minimal') { ctx.globalAlpha=.76; ctx.font=`400 ${Math.round(width*(isWide?.012:.022))}px "Microsoft YaHei", sans-serif`; wrapText(ctx,state.description,textX,afterTitle+pad*.2,textW,Math.round(width*(isWide?.02:.034)),3); ctx.globalAlpha=1; }
+  ctx.globalAlpha=.68;
+  ctx.font = `600 ${Math.round(width*(isWide?.012:.018))}px "Microsoft YaHei", sans-serif`;
+  const afterPublisher = wrapText(ctx,state.title,textX,textY+pad*.45,textW,Math.round(width*(isWide?.017:.026)),2);
+  ctx.globalAlpha=1;
+  ctx.font=`560 ${Math.round(width*(isWide?.024:.04))}px "Microsoft YaHei", sans-serif`;
+  wrapText(ctx,state.description,textX,afterPublisher+pad*.22,textW,Math.round(width*(isWide?.032:.052)),isWide?4:3);
   ctx.strokeStyle=light?'#111216':'#fff'; ctx.globalAlpha=.6; ctx.beginPath(); ctx.moveTo(pad,height-pad*.85); ctx.lineTo(width-pad,height-pad*.85); ctx.stroke();
   ctx.font=`500 ${Math.round(width*.012)}px Arial, sans-serif`; ctx.fillText('CARDLY · SHARE BEAUTIFULLY',pad,height-pad*.55); ctx.textAlign='right'; ctx.fillText('↗',width-pad,height-pad*.62); ctx.globalAlpha=1;
   canvas.toBlob(blob => {
