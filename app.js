@@ -133,22 +133,36 @@ $('#image-upload').addEventListener('change', event => {
   reader.readAsDataURL(file);
 });
 
-$('#generate-button').addEventListener('click', () => {
+$('#generate-button').addEventListener('click', async () => {
   const button = $('#generate-button');
   const value = urlInput.value.trim();
   if (!value) { urlInput.focus(); return showToast('请先粘贴内容链接'); }
   try { new URL(value); } catch { urlInput.focus(); return showToast('请输入完整的 https:// 链接'); }
   button.classList.add('loading');
   button.textContent = '正在生成…';
-  setTimeout(() => {
-    state.url = value;
-    const host = new URL(value).hostname.replace(/^www\./, '').toUpperCase();
-    sourceData[state.source].name = state.source === 'web' ? host : sourceData[state.source].name;
+  state.url = value;
+  const host = new URL(value).hostname.replace(/^www\./, '').toUpperCase();
+  sourceData[state.source].name = state.source === 'web' ? host : sourceData[state.source].name;
+  try {
+    const response = await fetch('/api/extract?url=' + encodeURIComponent(value));
+    const metadata = response.ok ? await response.json() : null;
+    if (metadata?.title) {
+      state.title = metadata.title;
+      titleInput.value = state.title;
+    }
+    if (metadata?.description) {
+      state.description = metadata.description.slice(0, 120);
+      descriptionInput.value = state.description;
+    }
+    if (metadata?.image) state.image = metadata.image;
+    showToast(metadata?.title ? '已提取公开内容，可继续编辑' : '平台未开放元数据，已载入卡片模板');
+  } catch {
+    showToast('平台未开放元数据，已载入卡片模板');
+  } finally {
     updateCard();
     button.classList.remove('loading');
     button.textContent = '生成卡片';
-    showToast('已生成，可继续编辑');
-  }, 700);
+  }
 });
 
 $('#reset-button').addEventListener('click', () => {
