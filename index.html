@@ -52,8 +52,9 @@
           <div class="settings-grid">
             <fieldset>
               <legend>画布比例</legend>
-              <div class="segmented" id="ratio-control">
-                <button data-ratio="square" class="active"><span class="ratio-icon square"></span>方形</button>
+              <div class="segmented ratio-segmented" id="ratio-control">
+                <button data-ratio="auto" class="active"><span class="ratio-icon auto"></span>自动</button>
+                <button data-ratio="square"><span class="ratio-icon square"></span>方形</button>
                 <button data-ratio="wide"><span class="ratio-icon wide"></span>横版</button>
                 <button data-ratio="portrait"><span class="ratio-icon portrait"></span>竖版</button>
               </div>
@@ -82,45 +83,47 @@
           <div class="copy-fields">
             <label for="card-title">标题</label>
             <textarea id="card-title" rows="2">在海风与山影之间，重新想象公共空间</textarea>
-            <div class="field-meta"><label for="card-description">内容摘要</label><span id="char-count">38 / 120</span></div>
-            <textarea id="card-description" rows="3">一座面向海岸的文化建筑，以层叠露台连接城市生活与自然景观。</textarea>
+            <div class="field-meta"><label for="card-description">主要内容</label><span id="char-count">38 字 · 自动排版</span></div>
+            <textarea id="card-description" rows="8" maxlength="2000">一座面向海岸的文化建筑，以层叠露台连接城市生活与自然景观。</textarea>
           </div>
 
           <div class="upload-row">
             <div>
-              <strong>封面图片</strong>
-              <span>推荐 1600 × 900 px</span>
+              <strong>内容图片</strong>
+              <span id="image-count">可多选，自动排列</span>
             </div>
-            <label class="upload-button" for="image-upload">更换图片</label>
-            <input id="image-upload" type="file" accept="image/*" hidden />
+            <label class="upload-button" for="image-upload">选择图片</label>
+            <input id="image-upload" type="file" accept="image/*" multiple hidden />
           </div>
         </div>
 
         <aside class="preview-column" aria-labelledby="preview-title">
           <div class="preview-head">
             <div><span class="live-dot"></span><h2 id="preview-title">实时预览</h2></div>
-            <span id="canvas-size">1080 × 1080</span>
+            <span id="canvas-size">1080 × 自动高度</span>
           </div>
           <div class="preview-stage">
-            <article class="share-card theme-mist ratio-square layout-editorial source-web" id="share-card">
+            <article class="share-card theme-mist ratio-auto layout-editorial source-web density-short" id="share-card">
+              <div class="card-surface">
               <div class="card-topline">
                 <div class="source-brand"><span class="source-brand-icon"><img id="source-icon-image" alt="" /><span class="source-brand-fallback">⌁</span></span><span id="source-name">ARCHDAILY.CN</span></div>
                 <span class="card-number">CARD / 01</span>
-              </div>
-              <div class="cover-wrap">
-                <img id="cover-image" src="https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1600&q=88" alt="现代建筑与天空" crossorigin="anonymous" />
-                <span class="cover-index">01</span>
               </div>
               <div class="card-copy">
                 <p class="card-kicker" id="card-kicker">ARCHITECTURE · 6 MIN READ</p>
                 <h3 id="preview-card-title">在海风与山影之间，重新想象公共空间</h3>
                 <p id="preview-card-description">一座面向海岸的文化建筑，以层叠露台连接城市生活与自然景观。</p>
               </div>
+              <div class="media-gallery" id="media-gallery" aria-label="内容图片"></div>
               <div class="card-footer">
-                <div class="mini-code" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-                <span>扫码阅读原文</span>
-                <span class="footer-arrow">↗</span>
+                <div class="footer-meta">
+                  <span id="footer-date">10:05 · 11 JUL 2026</span>
+                  <strong>Cardly · 阅读原文</strong>
+                </div>
+                <img class="qr-code" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAAEP0lEQVR42u2d25LjIAxEyRT//8vZh63a2pokWHdEfHiccfBFpmk1jfx4Pp+Dtq/98AgIAAGgEQACQCMABIBGAAgAjQAQAFpdm5KDHo+H/0wL0en//v8eJjzjvz61x69/pboG810zAoAgGgE4Yw4IbL+A1bkaYYPpEHDfGQD5UzPfqnZ2fTtzSuZS4b3k3TIQdCwEhbxZqSjx2sniL5ILzrjl6jng7VWqcOAVZJLQCRYEBOWzIHPC7ISsNTpVOkVm/3dECxefHp+BWQFBQFDv9vZdXrzgDV1oO1nQAnZfn9QlgDiJza7YAEGwoKv/frd7deYtNVSmcjY61OGWgaADR0AGj77s81JI+PR6rn8o7CovdfjZnmS98p9bbVkAgu6diEkU456dlwYgEBM+JWJRJxUKPpLOa5AQCPpSY1b9ikfg2tavrrQ8SjV05imaswcQhIY4WNDAmEW763pAT8oouQbn6uajhmzJRXybO1qiQAiPUSmyniVuIOh8GrrdXSMc7K9X6JTbAm95NtTxQxwMkh4+HWO4VHMeAASdzIIMr6dBxM8AJe19LcDWCUd2MW7BFrRPIdUbqsIiLQHzxxsI+vZEbK2RSfiJ0xu6xg0hkcvLE7sYswq8oeauUndCAEFoQYXeUC2SyMfKOldND8DlqNf2EOsNta2i1Nj0gKADtSBV9uRfKRS+dA0dDzu9oXn84ZLO+s2jUUIWEHRjFmRbS/J4Q4fD9zBC1aFexqwyL3g4P3EWIwKCbrMiZhu8e41ZGYK27QLmdjOWcIwvUjMt3dIC9+I6/St3QNDAmMUckM84Q6wM/iR5Ifis8zvVD1WzyKzxN8RK8KmWi1TEB4K+a5dkoBM/ijKaM3ChNB3OoWfqvqKykrhOQVCLRYhxsKDlq+E3MCWJ+8JuhQynzpjll6g8YoYzoX17wYsVUCH5wZiFGBdqO1ARKrlVsoDI7RTjnEYE51mExbdS0yjEOLSgrjXLQ3BD4vHarwVJXFn+XEZiwiirRYoWBARFg4y8SEFISmGW0PdoQaNNWWInP5FkT/56ZWhBrIg1YDUeJUc1Lqu1ID9tCP9sS5NNzmhBJGI5H1sY5fVWPF1pN93PUwjPWlWuWafLQEggaGDMYg4Yx+yALFhiLC5NMaN2I8XSO7OVIUTEDy8hAgTxRW29+bJV7p1nj5idvx0m55eLh5UdLSpmwYISNhh5hDDbOmJSBr7Zni63MkR5vDIcDyRiQFDc142Tli1jvaeVBo7ZX3APrJiVJ8bBgmBBPbZZayvfBGpBdSxoCyJdPjtD7Rlh7fPUKQEIAoKUtSVU23LCq9QcXze0coyrRCGVxzawnh8QxKcMR1Gl9hFR6vhGH3R2eqFCylzBgoCgQyp0OhfHQ+7ovIpZKqLS5FOGgZsPgaCBMYtGALbPXq1s+IwAGgEgADQCQABoBIAA0AgAAaARgC9vfwCfVmf6zCg5ygAAAABJRU5ErkJggg==" alt="扫码打开 Cardly" />
               </div>
+              </div>
+              <div class="card-watermark">CARDLY · 制作卡片</div>
             </article>
           </div>
           <div class="preview-actions">
