@@ -2,7 +2,7 @@ const files = __FILES__;
 
 const PLATFORM_RULES = [
   ['x', 'X', h => h === 'x.com' || h === 'twitter.com' || h.endsWith('.twitter.com')],
-  ['weibo', '微博', h => h === 'weibo.com' || h.endsWith('.weibo.com')],
+  ['weibo', '微博', h => h === 'weibo.com' || h.endsWith('.weibo.com') || h === 'weibo.cn' || h.endsWith('.weibo.cn')],
   ['wechat', '微信公众号', h => h === 'mp.weixin.qq.com'],
   ['zhihu', '知乎', h => h === 'zhihu.com' || h.endsWith('.zhihu.com')],
   ['xiaohongshu', '小红书', h => h === 'xiaohongshu.com' || h.endsWith('.xiaohongshu.com') || h === 'xhslink.com'],
@@ -12,7 +12,7 @@ const PLATFORM_RULES = [
   ['douban', '豆瓣', h => h === 'douban.com' || h.endsWith('.douban.com')],
   ['telegram', 'Telegram', h => h === 't.me' || h === 'telegram.me'],
   ['douyin', '抖音', h => h === 'douyin.com' || h.endsWith('.douyin.com') || h === 'v.douyin.com'],
-  ['netease_music', '网易云音乐', h => h === 'music.163.com'],
+  ['netease_music', '网易云音乐', h => h === 'music.163.com' || h.endsWith('.music.163.com') || h === '163cn.tv' || h.endsWith('.163cn.tv')],
   ['qq_music', 'QQ音乐', h => h === 'y.qq.com' || h.endsWith('.y.qq.com')],
   ['apple_music', 'Apple Music', h => h === 'music.apple.com'],
   ['spotify', 'Spotify', h => h === 'open.spotify.com'],
@@ -141,6 +141,9 @@ function imageReferer(target) {
   if (host.includes('music.126.net')) return 'https://music.163.com/';
   if (host.includes('gtimg.cn')) return 'https://y.qq.com/';
   if (host.includes('okjike.com')) return 'https://web.okjike.com/';
+  if (host.includes('cdninstagram.com') || host.includes('fbcdn.net')) return 'https://www.instagram.com/';
+  if (host.includes('doubanio.com')) return 'https://www.douban.com/';
+  if (host.includes('douyinpic.com') || host.includes('douyincdn.com')) return 'https://www.douyin.com/';
   return target.origin + '/';
 }
 
@@ -497,8 +500,10 @@ async function extractQQMusic(target, requestUrl) {
 
 async function extractTelegram(target, requestUrl) {
   const parts = target.pathname.split('/').filter(Boolean);
-  if (parts.length >= 2) {
-    const embed = new URL('https://t.me/' + parts[0] + '/' + parts[1]);
+  const channel = parts[0] === 's' ? parts[1] : parts[0];
+  const postId = parts[0] === 's' ? parts[2] : parts[1];
+  if (channel && postId) {
+    const embed = new URL('https://t.me/' + channel + '/' + postId);
     embed.searchParams.set('embed', '1');
     embed.searchParams.set('mode', 'tme');
     const { text } = await fetchText(embed);
@@ -518,8 +523,10 @@ async function extractTelegram(target, requestUrl) {
 }
 
 async function extractInstagram(target, requestUrl) {
-  const code = target.pathname.match(/\/(?:p|reel|tv)\/([^/]+)/i)?.[1];
-  const source = code ? new URL('https://www.instagram.com/p/' + code + '/embed/captioned/') : target;
+  const mediaPath = target.pathname.match(/\/(p|reel|tv)\/([^/]+)/i);
+  const mediaType = mediaPath?.[1]?.toLowerCase();
+  const code = mediaPath?.[2];
+  const source = code ? new URL('https://www.instagram.com/' + mediaType + '/' + code + '/embed/captioned/') : target;
   let { text } = await fetchText(source, { referer: 'https://www.instagram.com/' });
   let meta = parseMeta(text, source);
   let states = parseJsonScripts(text);
@@ -580,7 +587,9 @@ async function extractDouban(target, requestUrl) {
   if (id) {
     try {
       const host = target.hostname.toLowerCase();
-      const type = host.startsWith('book.') ? 'book' : host.startsWith('music.') ? 'music' : 'movie';
+      const type = host.startsWith('book.') || /\/book\//i.test(target.pathname)
+        ? 'book'
+        : host.startsWith('music.') || /\/music\//i.test(target.pathname) ? 'music' : 'movie';
       const endpoint = new URL('https://m.douban.com/rexxar/api/v2/' + type + '/' + id);
       const item = await fetchJson(endpoint, { referer: target.toString() });
       const creators = type === 'book'

@@ -30,14 +30,14 @@ function iconForUrl(value) {
   const parsed = new URL(value);
   const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
   if (host === 'x.com' || host === 'twitter.com') return platformIcons.x;
-  if (host === 'weibo.com' || host.endsWith('.weibo.com')) return platformIcons.weibo;
+  if (host === 'weibo.com' || host.endsWith('.weibo.com') || host === 'weibo.cn' || host.endsWith('.weibo.cn')) return platformIcons.weibo;
   if (host === 't.me' || host === 'telegram.org') return platformIcons.telegram;
   if (host === 'instagram.com' || host.endsWith('.instagram.com')) return platformIcons.instagram;
   if (host === 'zhihu.com' || host.endsWith('.zhihu.com')) return platformIcons.zhihu;
   if (host === 'mp.weixin.qq.com') return platformIcons.wechat;
   if (host === 'xiaohongshu.com' || host.endsWith('.xiaohongshu.com') || host === 'xhslink.com') return platformIcons.xiaohongshu;
   if (host === 'okjike.com' || host.endsWith('.okjike.com')) return platformIcons.jike;
-  if (host === 'music.163.com') return platformIcons.netease;
+  if (host === 'music.163.com' || host.endsWith('.music.163.com') || host === '163cn.tv' || host.endsWith('.163cn.tv')) return platformIcons.netease;
   if (host === 'y.qq.com' || host.endsWith('.y.qq.com')) return platformIcons.qqmusic;
   if (host === 'douban.com' || host.endsWith('.douban.com')) return platformIcons.douban;
   if (host === 'douyin.com' || host.endsWith('.douyin.com') || host === 'v.douyin.com') return platformIcons.douyin;
