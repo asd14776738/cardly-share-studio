@@ -5,7 +5,7 @@
     "scripts":  {
                     "start":  "npx --yes serve . -l 4173",
                     "build":  "node build.mjs",
-                    "test":  "node build.mjs \u0026\u0026 node tests/adapter-fixtures.mjs"
+                    "test":  "node build.mjs \u0026\u0026 node tests/adapter-fixtures.mjs && node tests/reading-time.mjs"
                 },
     "type":  "module"
 }

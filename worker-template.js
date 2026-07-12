@@ -52,6 +52,14 @@ function textOnly(value) {
     .replace(/[ \t]+/g, ' ').replace(/\n\s+/g, '\n').trim();
 }
 
+function readingStats(value) {
+  const text = textOnly(value);
+  const hanCharacters = (text.match(/[\u3400-\u9fff]/g) || []).length;
+  const latinWords = (text.replace(/[\u3400-\u9fff]/g, ' ').match(/[A-Za-z0-9]+(?:['’-][A-Za-z0-9]+)*/g) || []).length;
+  const minutes = Math.max(1, Math.ceil(hanCharacters / 300 + latinWords / 220));
+  return { readingMinutes: minutes, readingUnits: hanCharacters + latinWords };
+}
+
 function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
@@ -156,6 +164,7 @@ function finalResult(data, target, requestUrl) {
   const images = directImages.map(value => proxied(value, requestUrl)).filter(Boolean).slice(0, 12);
   const title = textOnly(data.title);
   const description = textOnly(data.description).replace(/https:\/\/t\.co\/\w+\s*$/i, '').trim();
+  const reading = readingStats(firstValue(data.readingText, description));
   const status = data.status || (title && (description || images.length) ? 'ok' : 'partial');
   return {
     ...base,
@@ -166,6 +175,7 @@ function finalResult(data, target, requestUrl) {
     images,
     image: images[0] || '',
     imageCount: images.length,
+    ...reading,
     strategy: data.strategy || 'html-metadata',
     status,
   };
@@ -382,6 +392,7 @@ async function extractWechat(target, requestUrl) {
   return finalResult({
     title: firstValue(variable('msg_title'), meta.title),
     description: firstValue(variable('msg_desc'), meta.description, contentText.slice(0, 4000)),
+    readingText: contentText,
     author: firstValue(variable('nickname'), meta.author),
     images: unique([
       variable('msg_cdn_url'),

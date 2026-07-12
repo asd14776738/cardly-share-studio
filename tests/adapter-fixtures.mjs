@@ -25,7 +25,7 @@ globalThis.fetch = async input => {
   if (url.startsWith('https://mp.weixin.qq.com/s/abc')) return html(`
     <meta property="og:title" content="微信备用标题">
     <script>var msg_title = '微信文章标题'.html(false); var msg_desc = '微信摘要'; var nickname = '公众号作者'; var msg_cdn_url = 'https://mmbiz.qpic.cn/cover.jpg';</script>
-    <div id="js_content"><p>微信文章正文。</p><img data-src="https://mmbiz.qpic.cn/body.jpg"></div><script></script>`);
+    <div id="js_content"><p>${'微信文章正文。'.repeat(180)}</p><img data-src="https://mmbiz.qpic.cn/body.jpg"></div><script></script>`);
   if (url.startsWith('https://www.xiaohongshu.com/discovery/item/note1') || url.startsWith('https://xhslink.com/a/note1')) return html(`
     <script>window.__INITIAL_STATE__={"note":{"noteId":"note1","title":"小红书标题","desc":"小红书正文","user":{"nickname":"小红书作者"},"imageList":[{"urlDefault":"https://sns-webpic-qc.xhscdn.com/1.jpg"},{"urlDefault":"https://sns-webpic-qc.xhscdn.com/2.jpg"}]}};</script>`);
   if (url.startsWith('https://web.okjike.com/originalPost/post1')) return html(`
@@ -96,7 +96,7 @@ async function extract(target) {
 const cases = [
   ['知乎', 'https://www.zhihu.com/question/100/answer/200', { platform: 'zhihu', strategy: 'zhihu-answer-api', title: '知乎问题标题', author: '知乎作者', images: 1 }],
   ['微博', 'https://m.weibo.cn/status/post1', { platform: 'weibo', strategy: 'weibo-public-json', title: '微博作者 的微博', author: '微博作者', images: 2 }],
-  ['微信', 'https://mp.weixin.qq.com/s/abc', { platform: 'wechat', strategy: 'wechat-article-html', title: '微信文章标题', author: '公众号作者', images: 2 }],
+  ['微信', 'https://mp.weixin.qq.com/s/abc', { platform: 'wechat', strategy: 'wechat-article-html', title: '微信文章标题', author: '公众号作者', images: 2, minutes: 4 }],
   ['小红书', 'https://www.xiaohongshu.com/discovery/item/note1', { platform: 'xiaohongshu', strategy: 'xiaohongshu-initial-state', title: '小红书标题', author: '小红书作者', images: 2 }],
   ['即刻', 'https://web.okjike.com/originalPost/post1', { platform: 'jike', strategy: 'jike-ssr-state', author: '即刻作者', images: 1 }],
   ['网易云音乐', 'https://y.music.163.com/m/song?id=347230', { platform: 'netease_music', strategy: 'netease-song-api', title: '网易云歌曲', author: '歌手甲', images: 1 }],
@@ -125,6 +125,8 @@ for (const [name, url, expected] of cases) {
   if (expected.title) assert.equal(result.title, expected.title, name + ' title');
   if (expected.author) assert.equal(result.author, expected.author, name + ' author');
   assert.equal(result.imageCount, expected.images, name + ' image count');
+  assert.ok(Number.isInteger(result.readingMinutes) && result.readingMinutes >= 1, name + ' reading minutes');
+  if (expected.minutes) assert.equal(result.readingMinutes, expected.minutes, name + ' source reading minutes');
   assert.ok(result.description || name === '即刻', name + ' description');
   console.log('PASS', name, result.strategy, result.imageCount);
 }

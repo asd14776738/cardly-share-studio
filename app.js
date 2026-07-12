@@ -1,3 +1,5 @@
+import { estimateReadingMinutes, buildKicker } from './reading-time.js';
+
 function svgIcon(body) {
   return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(body);
 }
@@ -51,6 +53,9 @@ function iconForUrl(value) {
 
 const defaults = {
   source: 'web',
+  platform: 'web',
+  contentStatus: 'ok',
+  readingMinutes: null,
   ratio: 'auto',
   layout: 'editorial',
   theme: 'mist',
@@ -126,6 +131,16 @@ function contentDensity(text) {
   return 'long';
 }
 
+function liveKicker() {
+  return buildKicker({
+    platform: state.platform || state.source || 'web',
+    status: state.contentStatus,
+    readingMinutes: state.readingMinutes,
+    description: state.description,
+    imageCount: (state.images || []).filter(Boolean).length,
+  });
+}
+
 function renderMediaGallery() {
   const gallery = qs('#media-gallery');
   const images = (state.images || []).filter(Boolean).slice(0, 6);
@@ -160,7 +175,7 @@ function updateCard() {
   sourceIcon.hidden = !state.icon;
   sourceFallback.hidden = Boolean(state.icon);
   sourceIcon.src = state.icon || '';
-  qs('#card-kicker').textContent = sourceData[state.source].kicker;
+  qs('#card-kicker').textContent = liveKicker();
   renderMediaGallery();
   const now = new Date();
   const time = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -183,6 +198,9 @@ function selectSource(source, applyPreset = true) {
   if (applyPreset) {
     state.title = sourceData[source].title;
     state.description = sourceData[source].description;
+    state.platform = source;
+    state.contentStatus = 'ok';
+    state.readingMinutes = null;
     state.image = sourceData[source].image;
     state.images = [sourceData[source].image];
     state.icon = sourceData[source].iconUrl;
@@ -221,6 +239,7 @@ qs('#theme-control').addEventListener('click', event => {
 titleInput.addEventListener('input', () => { state.title = titleInput.value || '输入你的标题'; updateCard(); });
 descriptionInput.addEventListener('input', () => {
   state.description = descriptionInput.value.slice(0, 2000);
+  state.readingMinutes = null;
   if (descriptionInput.value !== state.description) descriptionInput.value = state.description;
   updateCard();
 });
@@ -253,6 +272,9 @@ qs('#generate-button').addEventListener('click', async () => {
   button.classList.add('loading');
   button.textContent = '正在生成…';
   state.url = value;
+  state.platform = state.source;
+  state.contentStatus = 'ok';
+  state.readingMinutes = null;
   state.icon = iconForUrl(value);
   state.image = '';
   state.images = [];
@@ -267,6 +289,9 @@ qs('#generate-button').addEventListener('click', async () => {
     const metadata = await response.json().catch(() => null);
     if (!response.ok) throw new Error(metadata?.detail || metadata?.error || '提取失败');
     state.title = metadata?.title || host;
+    state.platform = metadata?.platform || state.source;
+    state.contentStatus = metadata?.status || 'ok';
+    state.readingMinutes = Number.isFinite(metadata?.readingMinutes) ? metadata.readingMinutes : estimateReadingMinutes(metadata?.description);
     const accessMessage = metadata?.status === 'login_required'
       ? `${metadata.platformLabel || '该平台'}限制匿名读取，请上传截图或手动粘贴正文`
       : '';
@@ -446,7 +471,7 @@ async function downloadAutoCard() {
   y += 86;
   ctx.globalAlpha = .55;
   ctx.font = '600 18px Arial, sans-serif';
-  ctx.fillText(sourceData[state.source].kicker, contentX, y);
+  ctx.fillText(liveKicker(), contentX, y);
   ctx.globalAlpha = 1;
   y += 36;
   ctx.globalAlpha = .7;
@@ -539,7 +564,7 @@ async function downloadCard() {
   const textY = isWide ? imageY+height*.08 : imageY+imageH+pad*.55;
   const textW = isWide ? width-textX-pad : width-pad*2;
   ctx.fillStyle = light ? '#111216' : '#ffffff';
-  ctx.globalAlpha=.7; ctx.font = `600 ${Math.round(width*(isWide?.009:.011))}px Arial, sans-serif`; ctx.fillText(sourceData[state.source].kicker, textX, textY); ctx.globalAlpha=1;
+  ctx.globalAlpha=.7; ctx.font = `600 ${Math.round(width*(isWide?.009:.011))}px Arial, sans-serif`; ctx.fillText(liveKicker(), textX, textY); ctx.globalAlpha=1;
   ctx.globalAlpha=.68;
   ctx.font = `600 ${Math.round(width*(isWide?.012:.018))}px "Microsoft YaHei", sans-serif`;
   const afterPublisher = wrapText(ctx,state.title,textX,textY+pad*.45,textW,Math.round(width*(isWide?.017:.026)),2);
