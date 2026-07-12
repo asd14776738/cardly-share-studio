@@ -92,6 +92,7 @@ function imagesFromHtml(html, base) {
   const images = [];
   for (const tag of html.match(/<img\b[^>]*>/gi) || []) {
     const value = tag.match(/(?:data-src|data-original|src)=["']([^"']+)["']/i)?.[1];
+    if (!value) continue;
     const valid = safeUrl(decode(value), base);
     if (valid) images.push(valid.toString());
   }
@@ -135,7 +136,10 @@ function imageReferer(target) {
 
 function finalResult(data, target, requestUrl) {
   const base = platformFor(target);
-  const directImages = unique((data.images || []).map(value => safeUrl(decode(value), target)?.toString() || ''));
+  const directImages = unique((data.images || []).map(value => {
+    const decoded = decode(value);
+    return decoded ? safeUrl(decoded, target)?.toString() || '' : '';
+  }));
   const images = directImages.map(value => proxied(value, requestUrl)).filter(Boolean).slice(0, 12);
   const title = textOnly(data.title);
   const description = textOnly(data.description).replace(/https:\/\/t\.co\/\w+\s*$/i, '').trim();
@@ -522,6 +526,26 @@ async function extractInstagram(target, requestUrl) {
 }
 
 async function extractDouban(target, requestUrl) {
+  const id = target.pathname.match(/\/subject\/(\d+)/)?.[1];
+  if (id) {
+    try {
+      const host = target.hostname.toLowerCase();
+      const type = host.startsWith('book.') ? 'book' : host.startsWith('music.') ? 'music' : 'movie';
+      const endpoint = new URL('https://m.douban.com/rexxar/api/v2/' + type + '/' + id);
+      const item = await fetchJson(endpoint, { referer: target.toString() });
+      const creators = type === 'book'
+        ? (item.author || item.authors || []).map(value => typeof value === 'string' ? value : value.name)
+        : (item.directors || []).map(value => value.name);
+      const cast = (item.actors || []).slice(0, 3).map(value => value.name).filter(Boolean);
+      return finalResult({
+        title: item.title,
+        description: firstValue(item.intro, item.card_subtitle, [creators.join(' / '), cast.join(' / ')].filter(Boolean).join(' · ')),
+        author: creators.filter(Boolean).join(' / '),
+        images: [item.pic?.large, item.pic?.normal, item.cover_url, item.cover],
+        strategy: 'douban-rexxar-api',
+      }, target, requestUrl);
+    } catch {}
+  }
   const { response, text } = await fetchText(target, { referer: 'https://www.douban.com/' });
   const finalTarget = safeUrl(response.url) || target;
   const meta = parseMeta(text, finalTarget);
@@ -565,7 +589,9 @@ async function extractDouyin(target, requestUrl) {
       ...meta.images,
     ]),
     strategy: state && aweme ? 'douyin-render-data' : 'douyin-metadata',
-    status: /验证码|verify|captcha|登录/i.test(meta.title + text.slice(0, 5000)) ? 'login_required' : 'ok',
+    status: /验证码|verify|captcha|登录/i.test(meta.title + text.slice(0, 5000))
+      ? 'login_required'
+      : state && aweme ? 'ok' : 'partial',
   }, finalTarget, requestUrl);
 }
 
@@ -615,15 +641,21 @@ async function extract(target, requestUrl) {
   if (platform === 'qq_music') return extractQQMusic(target, requestUrl);
   if (platform === 'telegram') return extractTelegram(target, requestUrl);
   if (platform === 'spotify') return extractSpotify(target, requestUrl);
-  if (platform === 'instagram') return extractInstagram(target, requestUrl);
-  if (platform === 'threads') return extractThreads(target, requestUrl);
+  if (platform === 'instagram') {
+    try { return await extractInstagram(target, requestUrl); }
+    catch { return finalResult({ title: 'Instagram', strategy: 'instagram-login-wall', status: 'login_required' }, target, requestUrl); }
+  }
+  if (platform === 'threads') {
+    try { return await extractThreads(target, requestUrl); }
+    catch { return finalResult({ title: 'Threads', strategy: 'threads-restricted', status: 'login_required' }, target, requestUrl); }
+  }
   if (platform === 'douban') return extractDouban(target, requestUrl);
   if (platform === 'douyin') return extractDouyin(target, requestUrl);
-  const strategies = {
-    apple_music: 'applemusic-structured-metadata',
-    chatgpt: 'chatgpt-shared-page',
-    kimi: 'kimi-shared-page',
-  };
+  if (platform === 'chatgpt' || platform === 'kimi') {
+    try { return await extractEmbedOrMetadata(target, requestUrl, platform + '-shared-page'); }
+    catch { return finalResult({ title: platform === 'chatgpt' ? 'ChatGPT 分享' : 'Kimi 分享', strategy: platform + '-restricted', status: 'login_required' }, target, requestUrl); }
+  }
+  const strategies = { apple_music: 'applemusic-structured-metadata' };
   return extractEmbedOrMetadata(target, requestUrl, strategies[platform] || 'html-metadata');
 }
 
