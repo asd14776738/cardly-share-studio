@@ -8,7 +8,7 @@ const PLATFORM_RULES = [
   ['xiaohongshu', '小红书', h => h === 'xiaohongshu.com' || h.endsWith('.xiaohongshu.com') || h === 'xhslink.com'],
   ['jike', '即刻', h => h === 'okjike.com' || h.endsWith('.okjike.com')],
   ['instagram', 'Instagram', h => h === 'instagram.com' || h.endsWith('.instagram.com')],
-  ['threads', 'Threads', h => h === 'threads.net' || h.endsWith('.threads.net')],
+  ['threads', 'Threads', h => h === 'threads.net' || h.endsWith('.threads.net') || h === 'threads.com' || h.endsWith('.threads.com')],
   ['douban', '豆瓣', h => h === 'douban.com' || h.endsWith('.douban.com')],
   ['telegram', 'Telegram', h => h === 't.me' || h === 'telegram.me'],
   ['douyin', '抖音', h => h === 'douyin.com' || h.endsWith('.douyin.com') || h === 'v.douyin.com'],
