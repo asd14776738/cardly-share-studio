@@ -299,11 +299,11 @@ async function extractZhihu(target, requestUrl) {
   if (answerId || articleId || questionId) {
     try {
       const endpoint = answerId
-        ? new URL('https://www.zhihu.com/api/v4/answers/' + answerId)
+        ? new URL('https://api.zhihu.com/answers/' + answerId)
         : articleId
-          ? new URL('https://zhuanlan.zhihu.com/api/articles/' + articleId)
-          : new URL('https://www.zhihu.com/api/v4/questions/' + questionId);
-      if (!articleId) endpoint.searchParams.set('include', 'content,excerpt,author,question,thumbnail,detail');
+          ? new URL('https://api.zhihu.com/articles/' + articleId)
+          : new URL('https://api.zhihu.com/questions/' + questionId);
+      endpoint.searchParams.set('include', 'content,excerpt,author,question,thumbnail,detail');
       const item = await fetchJson(endpoint, { referer: target.toString() });
       const content = firstValue(item.content, item.detail, item.excerpt, item.description);
       const title = firstValue(item.title, item.question?.title);
@@ -355,8 +355,10 @@ async function extractWechat(target, requestUrl) {
   const finalTarget = safeUrl(response.url) || target;
   const meta = parseMeta(text, finalTarget);
   const variable = name => {
-    const pattern = new RegExp('(?:var\\s+)?' + name + '\\s*=\\s*([\\\"\\\'])([\\s\\S]*?)\\1\\s*;', 'i');
-    return decodeJsString(text.match(pattern)?.[2] || '');
+    const pattern = new RegExp('(?:var\\s+)?' + name + '\\s*=\\s*([^;\\r\\n]+)', 'i');
+    const rightHandSide = text.match(pattern)?.[1] || '';
+    const quoted = rightHandSide.match(/"((?:\\\\.|[^"])*)"|'((?:\\\\.|[^'])*)'/);
+    return decodeJsString(quoted?.[1] ?? quoted?.[2] ?? '');
   };
   const content = text.match(/<div[^>]+id=["']js_content["'][^>]*>([\s\S]*?)(?:<script\b|<div[^>]+id=["']js_pc_qr_code["'])/i)?.[1] || '';
   const contentText = textOnly(content);

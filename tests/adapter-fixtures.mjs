@@ -6,7 +6,7 @@ const json = value => new Response(JSON.stringify(value), { status: 200, headers
 
 globalThis.fetch = async input => {
   const url = String(input);
-  if (url.startsWith('https://www.zhihu.com/api/v4/answers/200')) return json({
+  if (url.startsWith('https://api.zhihu.com/answers/200')) return json({
     content: '<p>知乎回答正文，包含足够的信息。</p><img src="https://pic.zhimg.com/a.jpg">',
     question: { title: '知乎问题标题' },
     author: { name: '知乎作者' },
@@ -24,7 +24,7 @@ globalThis.fetch = async input => {
     <script id="js-initialData" type="text/json">{"initialState":{"entities":{"questions":{"100":{"title":"知乎问题标题","detail":"问题详情"}},"answers":{"200":{"content":"<p>知乎回答正文，包含足够的信息。</p><img src=\\"https://pic.zhimg.com/a.jpg\\">","author":{"name":"知乎作者"}}}}}}</script>`);
   if (url.startsWith('https://mp.weixin.qq.com/s/abc')) return html(`
     <meta property="og:title" content="微信备用标题">
-    <script>var msg_title = '微信文章标题'; var msg_desc = '微信摘要'; var nickname = '公众号作者'; var msg_cdn_url = 'https://mmbiz.qpic.cn/cover.jpg';</script>
+    <script>var msg_title = '微信文章标题'.html(false); var msg_desc = '微信摘要'; var nickname = '公众号作者'; var msg_cdn_url = 'https://mmbiz.qpic.cn/cover.jpg';</script>
     <div id="js_content"><p>微信文章正文。</p><img data-src="https://mmbiz.qpic.cn/body.jpg"></div><script></script>`);
   if (url.startsWith('https://www.xiaohongshu.com/discovery/item/note1')) return html(`
     <script>window.__INITIAL_STATE__={"note":{"noteId":"note1","title":"小红书标题","desc":"小红书正文","user":{"nickname":"小红书作者"},"imageList":[{"urlDefault":"https://sns-webpic-qc.xhscdn.com/1.jpg"},{"urlDefault":"https://sns-webpic-qc.xhscdn.com/2.jpg"}]}};</script>`);
