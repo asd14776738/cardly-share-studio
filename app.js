@@ -2,11 +2,28 @@ function svgIcon(body) {
   return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(body);
 }
 
+function brandTile(label, background, foreground = '#fff', size = 10) {
+  return svgIcon(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="${background}"/><text x="12" y="15.7" text-anchor="middle" font-family="Arial,Microsoft YaHei,sans-serif" font-size="${size}" font-weight="800" fill="${foreground}">${label}</text></svg>`);
+}
+
 const platformIcons = {
   x: svgIcon('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#111" d="M18.9 2h3.7l-8.1 9.3L24 22h-7.4l-5.8-7.6L4.2 22H.5l8.6-9.8L0 2h7.6l5.3 6.9L18.9 2Zm-1.3 18h2L6.5 3.9H4.3L17.6 20Z"/></svg>'),
   weibo: svgIcon('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><ellipse cx="11" cy="14" rx="9" ry="6.5" fill="#e6162d"/><ellipse cx="10" cy="14" rx="5" ry="3.4" fill="#fff"/><circle cx="9" cy="13.5" r="1.7" fill="#111"/><path d="M15 7c3-1 5 1 5 3" fill="none" stroke="#f5c400" stroke-width="2" stroke-linecap="round"/></svg>'),
   telegram: svgIcon('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#229ed9"/><path fill="#fff" d="m5 11.5 13-5-2.3 11.2c-.2.8-.8 1-1.5.6l-3.5-2.6-1.7 1.7c-.2.2-.3.3-.7.3l.3-3.6 6.5-5.9c.3-.3-.1-.4-.4-.2l-8 5-3.4-1.1c-.7-.2-.7-.7.2-1Z"/></svg>'),
-  instagram: svgIcon('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#d62976"/><rect x="5" y="5" width="14" height="14" rx="4" fill="none" stroke="#fff" stroke-width="2"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="#fff" stroke-width="2"/><circle cx="17" cy="7" r="1.1" fill="#fff"/></svg>')
+  instagram: svgIcon('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#d62976"/><rect x="5" y="5" width="14" height="14" rx="4" fill="none" stroke="#fff" stroke-width="2"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="#fff" stroke-width="2"/><circle cx="17" cy="7" r="1.1" fill="#fff"/></svg>'),
+  zhihu: brandTile('知', '#1772f6', '#fff', 12),
+  wechat: brandTile('微', '#07c160', '#fff', 12),
+  xiaohongshu: brandTile('RED', '#ff2442', '#fff', 7),
+  jike: brandTile('J', '#ffe411', '#111', 13),
+  netease: brandTile('♪', '#e60026', '#fff', 15),
+  qqmusic: brandTile('QQ', '#31c27c', '#fff', 8),
+  douban: brandTile('豆', '#2e963d', '#fff', 12),
+  douyin: brandTile('♪', '#111', '#25f4ee', 15),
+  spotify: brandTile('≋', '#1ed760', '#111', 16),
+  apple: brandTile('♫', '#111', '#fff', 14),
+  threads: brandTile('@', '#111', '#fff', 14),
+  chatgpt: brandTile('AI', '#10a37f', '#fff', 8),
+  kimi: brandTile('K', '#111', '#fff', 13)
 };
 
 function iconForUrl(value) {
@@ -16,6 +33,19 @@ function iconForUrl(value) {
   if (host === 'weibo.com' || host.endsWith('.weibo.com')) return platformIcons.weibo;
   if (host === 't.me' || host === 'telegram.org') return platformIcons.telegram;
   if (host === 'instagram.com' || host.endsWith('.instagram.com')) return platformIcons.instagram;
+  if (host === 'zhihu.com' || host.endsWith('.zhihu.com')) return platformIcons.zhihu;
+  if (host === 'mp.weixin.qq.com') return platformIcons.wechat;
+  if (host === 'xiaohongshu.com' || host.endsWith('.xiaohongshu.com') || host === 'xhslink.com') return platformIcons.xiaohongshu;
+  if (host === 'okjike.com' || host.endsWith('.okjike.com')) return platformIcons.jike;
+  if (host === 'music.163.com') return platformIcons.netease;
+  if (host === 'y.qq.com' || host.endsWith('.y.qq.com')) return platformIcons.qqmusic;
+  if (host === 'douban.com' || host.endsWith('.douban.com')) return platformIcons.douban;
+  if (host === 'douyin.com' || host.endsWith('.douyin.com') || host === 'v.douyin.com') return platformIcons.douyin;
+  if (host === 'open.spotify.com') return platformIcons.spotify;
+  if (host === 'music.apple.com') return platformIcons.apple;
+  if (host === 'threads.com' || host.endsWith('.threads.com') || host === 'threads.net' || host.endsWith('.threads.net')) return platformIcons.threads;
+  if (host === 'chatgpt.com' || host === 'chat.openai.com') return platformIcons.chatgpt;
+  if (host === 'kimi.com' || host.endsWith('.kimi.com') || host === 'kimi.moonshot.cn') return platformIcons.kimi;
   return new URL('/favicon.ico', parsed.origin).href;
 }
 
