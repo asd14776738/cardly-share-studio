@@ -137,17 +137,20 @@ function finalResult(data, target, requestUrl) {
   const base = platformFor(target);
   const directImages = unique((data.images || []).map(value => safeUrl(decode(value), target)?.toString() || ''));
   const images = directImages.map(value => proxied(value, requestUrl)).filter(Boolean).slice(0, 12);
+  const title = textOnly(data.title);
+  const description = textOnly(data.description).replace(/https:\/\/t\.co\/\w+\s*$/i, '').trim();
+  const status = data.status || (title && (description || images.length) ? 'ok' : 'partial');
   return {
     ...base,
     host: target.hostname,
-    title: textOnly(data.title),
-    description: textOnly(data.description).replace(/https:\/\/t\.co\/\w+\s*$/i, '').trim(),
+    title,
+    description,
     author: textOnly(data.author),
     images,
     image: images[0] || '',
     imageCount: images.length,
     strategy: data.strategy || 'html-metadata',
-    status: data.status || 'ok',
+    status,
   };
 }
 
@@ -161,7 +164,7 @@ async function fetchText(url, headers = {}) {
     redirect: 'follow',
   });
   if (!response.ok) throw new Error('Upstream unavailable: ' + response.status);
-  return { response, text: (await response.text()).slice(0, 2000000) };
+  return { response, text: (await response.text()).slice(0, 5000000) };
 }
 
 function parseMeta(html, target) {
@@ -290,14 +293,38 @@ async function fetchJson(url, headers = {}) {
 }
 
 async function extractZhihu(target, requestUrl) {
+  const questionId = target.pathname.match(/\/question\/(\d+)/)?.[1];
+  const answerId = target.pathname.match(/\/answer\/(\d+)/)?.[1];
+  const articleId = target.pathname.match(/\/p\/(\d+)/)?.[1];
+  if (answerId || articleId || questionId) {
+    try {
+      const endpoint = answerId
+        ? new URL('https://www.zhihu.com/api/v4/answers/' + answerId)
+        : articleId
+          ? new URL('https://zhuanlan.zhihu.com/api/articles/' + articleId)
+          : new URL('https://www.zhihu.com/api/v4/questions/' + questionId);
+      if (!articleId) endpoint.searchParams.set('include', 'content,excerpt,author,question,thumbnail,detail');
+      const item = await fetchJson(endpoint, { referer: target.toString() });
+      const content = firstValue(item.content, item.detail, item.excerpt, item.description);
+      const title = firstValue(item.title, item.question?.title);
+      const author = item.author || {};
+      return finalResult({
+        title,
+        description: content,
+        author: firstValue(author.name, author.url_token),
+        images: unique([
+          ...imageValues(firstValue(item.image_url, item.thumbnail)),
+          ...imagesFromHtml(content, target),
+        ]),
+        strategy: answerId ? 'zhihu-answer-api' : articleId ? 'zhihu-article-api' : 'zhihu-question-api',
+      }, target, requestUrl);
+    } catch {}
+  }
   const { response, text } = await fetchText(target);
   const finalTarget = safeUrl(response.url) || target;
   const meta = parseMeta(text, finalTarget);
   const state = parseJsonBlock(text, /<script[^>]+id=["']js-initialData["'][^>]*>([\s\S]*?)<\/script>/i);
   const entities = state?.initialState?.entities || state?.entities || {};
-  const questionId = finalTarget.pathname.match(/\/question\/(\d+)/)?.[1];
-  const answerId = finalTarget.pathname.match(/\/answer\/(\d+)/)?.[1];
-  const articleId = finalTarget.pathname.match(/\/p\/(\d+)/)?.[1];
   const question = questionId ? entities.questions?.[questionId] : null;
   const answer = answerId ? entities.answers?.[answerId] : null;
   const article = articleId ? entities.articles?.[articleId] : null;
@@ -361,18 +388,21 @@ async function extractXiaohongshu(target, requestUrl) {
     if (typeof value.title === 'string') score += 1;
     return score;
   });
+  const isNote = Boolean(note && (note.noteId || note.note_id || typeof note.desc === 'string' || Array.isArray(note.imageList)));
   const media = [
     ...imageValues(note?.imageList),
     ...imageValues(note?.images),
     ...imageValues(note?.cover),
   ];
+  const blocked = /登录|安全验证|verify|captcha/i.test(meta.title + text.slice(0, 5000)) ||
+    (!isNote && !meta.description && /小红书|ICP备/i.test(meta.title));
   return finalResult({
     title: firstValue(note?.title, note?.displayTitle, meta.title),
     description: firstValue(note?.desc, note?.description, meta.description),
     author: firstValue(note?.user?.nickname, note?.user?.nickName, note?.user?.name, meta.author),
     images: unique([...media, ...meta.images]),
-    strategy: state && note ? 'xiaohongshu-initial-state' : 'xiaohongshu-metadata',
-    status: /登录|安全验证|verify|captcha/i.test(meta.title + text.slice(0, 5000)) ? 'login_required' : 'ok',
+    strategy: isNote ? 'xiaohongshu-initial-state' : blocked ? 'xiaohongshu-login-wall' : 'xiaohongshu-metadata',
+    status: blocked ? 'login_required' : 'ok',
   }, finalTarget, requestUrl);
 }
 

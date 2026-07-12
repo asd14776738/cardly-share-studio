@@ -228,18 +228,21 @@ qs('#generate-button').addEventListener('click', async () => {
   state.images = [];
   const host = new URL(value).hostname.replace(/^www\./, '').toUpperCase();
   sourceData[state.source].name = host;
+  state.title = host;
+  state.description = '';
+  titleInput.value = state.title;
+  descriptionInput.value = '';
   try {
     const response = await fetch('/api/extract?url=' + encodeURIComponent(value));
     const metadata = await response.json().catch(() => null);
     if (!response.ok) throw new Error(metadata?.detail || metadata?.error || '提取失败');
-    if (metadata?.title) {
-      state.title = metadata.title;
-      titleInput.value = state.title;
-    }
-    if (metadata?.description) {
-      state.description = metadata.description.slice(0, 2000);
-      descriptionInput.value = state.description;
-    }
+    state.title = metadata?.title || host;
+    const accessMessage = metadata?.status === 'login_required'
+      ? `${metadata.platformLabel || '该平台'}限制匿名读取，请上传截图或手动粘贴正文`
+      : '';
+    state.description = (metadata?.description || accessMessage).slice(0, 2000);
+    titleInput.value = state.title;
+    descriptionInput.value = state.description;
     const extractedImages = Array.isArray(metadata?.images)
       ? metadata.images.filter(Boolean)
       : (metadata?.image ? [metadata.image] : []);
@@ -250,6 +253,8 @@ qs('#generate-button').addEventListener('click', async () => {
     if (metadata?.platformLabel) sourceData[state.source].name = metadata.platformLabel.toUpperCase();
     if (metadata?.status === 'login_required') {
       showToast(`${metadata.platformLabel || '该平台'}限制匿名访问，可上传截图继续排版`);
+    } else if (metadata?.status === 'partial') {
+      showToast('只提取到有限公开信息，可继续手动补充');
     } else if (state.images.length > 1) {
       showToast(`已提取正文和 ${state.images.length} 张图片，可继续编辑`);
     } else {

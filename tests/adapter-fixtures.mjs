@@ -6,6 +6,11 @@ const json = value => new Response(JSON.stringify(value), { status: 200, headers
 
 globalThis.fetch = async input => {
   const url = String(input);
+  if (url.startsWith('https://www.zhihu.com/api/v4/answers/200')) return json({
+    content: '<p>知乎回答正文，包含足够的信息。</p><img src="https://pic.zhimg.com/a.jpg">',
+    question: { title: '知乎问题标题' },
+    author: { name: '知乎作者' },
+  });
   if (url.includes('weibo.com/ajax/statuses/show')) return json({
     text_raw: '微博正文内容',
     user: { screen_name: '微博作者' },
@@ -75,7 +80,7 @@ async function extract(target) {
 }
 
 const cases = [
-  ['知乎', 'https://www.zhihu.com/question/100/answer/200', { platform: 'zhihu', strategy: 'zhihu-initial-state', title: '知乎问题标题', author: '知乎作者', images: 1 }],
+  ['知乎', 'https://www.zhihu.com/question/100/answer/200', { platform: 'zhihu', strategy: 'zhihu-answer-api', title: '知乎问题标题', author: '知乎作者', images: 1 }],
   ['微博', 'https://weibo.com/user/post1', { platform: 'weibo', strategy: 'weibo-public-json', title: '微博作者 的微博', author: '微博作者', images: 2 }],
   ['微信', 'https://mp.weixin.qq.com/s/abc', { platform: 'wechat', strategy: 'wechat-article-html', title: '微信文章标题', author: '公众号作者', images: 2 }],
   ['小红书', 'https://www.xiaohongshu.com/discovery/item/note1', { platform: 'xiaohongshu', strategy: 'xiaohongshu-initial-state', title: '小红书标题', author: '小红书作者', images: 2 }],
