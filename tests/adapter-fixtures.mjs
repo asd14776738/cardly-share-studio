@@ -70,6 +70,11 @@ globalThis.fetch = async input => {
   if (url.startsWith('https://movie.douban.com/subject/1292052/')) return html(`
     <meta property="og:title" content="豆瓣电影标题"><meta property="og:image" content="https://img1.doubanio.com/poster.jpg">
     <span property="v:summary">豆瓣条目简介</span><a rel="v:directedBy">导演甲</a>`);
+  if (url.startsWith('https://www.douyin.com/video/456')) return html('<title>抖音</title>');
+  if (url.startsWith('https://www.iesdouyin.com/share/video/456/')) {
+    const router = { loaderData: { page: { videoInfoRes: { item_list: [{ aweme_id: '456', desc: '抖音分享页正文', author: { nickname: '分享页作者' }, video: { cover: { url_list: ['https://p3.douyinpic.com/share-cover.jpg'] } } }] } } } };
+    return html('<script>window._ROUTER_DATA = ' + JSON.stringify(router) + '</script>');
+  }
   if (url.startsWith('https://www.douyin.com/video/123') || url.startsWith('https://v.douyin.com/short123')) {
     const state = encodeURIComponent(JSON.stringify({ aweme: { aweme_id: '123', desc: '抖音正文', author: { nickname: '抖音作者' }, video: { cover: { url_list: ['https://p3.douyinpic.com/cover.jpg'] } } } }));
     return html('<script id="RENDER_DATA">' + state + '</script>');
@@ -110,6 +115,7 @@ const cases = [
   ['网易云短链', 'https://163cn.tv/song347230', { platform: 'netease_music', strategy: 'netease-metadata', title: '网易云短链歌曲', images: 1 }],
   ['豆瓣移动图书', 'https://m.douban.com/book/subject/1084336/', { platform: 'douban', strategy: 'douban-rexxar-api', title: '豆瓣图书标题', author: '作者乙', images: 1 }],
   ['抖音短链', 'https://v.douyin.com/short123', { platform: 'douyin', strategy: 'douyin-render-data', title: '抖音正文', author: '抖音作者', images: 1 }],
+  ['抖音分享页', 'https://www.douyin.com/video/456', { platform: 'douyin', strategy: 'douyin-share-router-data', title: '抖音分享页正文', author: '分享页作者', images: 1 }],
 ];
 
 for (const [name, url, expected] of cases) {

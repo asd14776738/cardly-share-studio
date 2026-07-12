@@ -620,21 +620,49 @@ async function extractDouban(target, requestUrl) {
 
 async function extractDouyin(target, requestUrl) {
   const { response, text } = await fetchText(target, { referer: 'https://www.douyin.com/' });
-  const finalTarget = safeUrl(response.url) || target;
-  const meta = parseMeta(text, finalTarget);
+  let finalTarget = safeUrl(response.url) || target;
+  let meta = parseMeta(text, finalTarget);
   const raw = text.match(/<script[^>]+id=["']RENDER_DATA["'][^>]*>([\s\S]*?)<\/script>/i)?.[1];
   let state = null;
+  let strategy = 'douyin-metadata';
   if (raw) {
-    try { state = JSON.parse(decodeURIComponent(decode(raw))); } catch {}
+    try {
+      state = JSON.parse(decodeURIComponent(decode(raw)));
+      strategy = 'douyin-render-data';
+    } catch {}
   }
-  const aweme = findBestObject(state, value => {
+  const scoreAweme = value => {
     let score = 0;
     if (value.aweme_id || value.awemeId) score += 4;
     if (typeof value.desc === 'string') score += 3;
     if (value.video || value.images) score += 3;
     if (value.author?.nickname) score += 2;
     return score;
-  });
+  };
+  let aweme = findBestObject(state, scoreAweme);
+  const videoId = finalTarget.pathname.match(/\/(?:video|share\/video)\/(\d+)/i)?.[1] ||
+    target.pathname.match(/\/(?:video|share\/video)\/(\d+)/i)?.[1];
+  if (!aweme && videoId) {
+    try {
+      const share = new URL('https://www.iesdouyin.com/share/video/' + videoId + '/');
+      const mobile = await fetchText(share, {
+        'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148',
+        referer: 'https://www.douyin.com/',
+      });
+      const router = parseJsonBlock(
+        mobile.text,
+        /window\._ROUTER_DATA\s*=\s*([\s\S]*?)<\/script>/i,
+      );
+      const shareAweme = findBestObject(router, scoreAweme);
+      if (shareAweme) {
+        state = router;
+        aweme = shareAweme;
+        strategy = 'douyin-share-router-data';
+        const shareTarget = safeUrl(mobile.response.url) || finalTarget;
+        meta = parseMeta(mobile.text, shareTarget);
+      }
+    } catch {}
+  }
   const video = aweme?.video || {};
   return finalResult({
     title: firstValue(aweme?.desc, meta.title),
@@ -647,8 +675,8 @@ async function extractDouyin(target, requestUrl) {
       ...imageValues(video.dynamic_cover),
       ...meta.images,
     ]),
-    strategy: state && aweme ? 'douyin-render-data' : 'douyin-metadata',
-    status: /验证码|verify|captcha|登录/i.test(meta.title + text.slice(0, 5000))
+    strategy,
+    status: /\u9a8c\u8bc1\u7801|verify|captcha|\u767b\u5f55/i.test(meta.title + text.slice(0, 5000))
       ? 'login_required'
       : state && aweme ? 'ok' : 'partial',
   }, finalTarget, requestUrl);
