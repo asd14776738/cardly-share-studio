@@ -58,7 +58,7 @@ globalThis.fetch = async input => {
     <meta property="og:image" content="https://scontent.cdninstagram.com/1.jpg">`);
   if (url.startsWith('https://www.threads.com/@author/post/code')) return html(`
     <meta property="og:title" content="Threads Post">
-    <script>{"text_post_app_info":{"text":"Threads 正文"},"display_url":"https:\\/\\/scontent.cdninstagram.com\\/thread.jpg"}</script>`);
+    <script type="application/json">{"post":{"code":"code","caption":{"text":"Threads 正文"},"user":{"username":"author"},"image_versions2":{"candidates":[{"url":"https://scontent.cdninstagram.com/thread.jpg"}]}}}</script>`);
   if (url.startsWith('https://m.douban.com/rexxar/api/v2/movie/1292052')) return json({
     title: '豆瓣电影标题', intro: '豆瓣条目简介', directors: [{ name: '导演甲' }],
     actors: [{ name: '演员甲' }], pic: { large: 'https://img1.doubanio.com/poster.jpg' },
@@ -96,7 +96,7 @@ const cases = [
   ['X', 'https://x.com/xauthor/status/2075492877380063586', { platform: 'x', strategy: 'x-syndication', title: 'X作者 (@xauthor) on X', author: '@xauthor', images: 2 }],
   ['Spotify', 'https://open.spotify.com/track/trackid', { platform: 'spotify', strategy: 'spotify-oembed', title: 'Spotify Song', author: 'Spotify Artist', images: 1 }],
   ['Instagram', 'https://www.instagram.com/p/CODE/', { platform: 'instagram', strategy: 'instagram-embed', title: 'Instagram Post', images: 1 }],
-  ['Threads', 'https://www.threads.com/@author/post/code', { platform: 'threads', strategy: 'threads-page-state', title: 'Threads Post', images: 1 }],
+  ['Threads', 'https://www.threads.com/@author/post/code', { platform: 'threads', strategy: 'threads-json-state', title: '@author on Threads', author: 'author', images: 1 }],
   ['豆瓣', 'https://movie.douban.com/subject/1292052/', { platform: 'douban', strategy: 'douban-rexxar-api', title: '豆瓣电影标题', author: '导演甲', images: 1 }],
   ['抖音', 'https://www.douyin.com/video/123', { platform: 'douyin', strategy: 'douyin-render-data', title: '抖音正文', author: '抖音作者', images: 1 }],
   ['ChatGPT', 'https://chatgpt.com/share/shareid', { platform: 'chatgpt', strategy: 'chatgpt-shared-page', title: 'ChatGPT 分享', images: 1 }],

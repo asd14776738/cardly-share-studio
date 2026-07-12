@@ -72,6 +72,16 @@ function parseJsonBlock(html, pattern) {
   catch { return null; }
 }
 
+function parseJsonScripts(html) {
+  const values = [];
+  for (const script of html.match(/<script[^>]+type=["']application\/json["'][^>]*>[\s\S]*?<\/script>/gi) || []) {
+    const raw = script.replace(/^.*?>/s, '').replace(/<\/script>$/i, '').trim();
+    if (!raw) continue;
+    try { values.push(JSON.parse(decode(raw))); } catch {}
+  }
+  return values;
+}
+
 function findBestObject(root, scorer) {
   let best = null;
   let bestScore = 0;
@@ -510,18 +520,58 @@ async function extractTelegram(target, requestUrl) {
 async function extractInstagram(target, requestUrl) {
   const code = target.pathname.match(/\/(?:p|reel|tv)\/([^/]+)/i)?.[1];
   const source = code ? new URL('https://www.instagram.com/p/' + code + '/embed/captioned/') : target;
-  const { text } = await fetchText(source, { referer: 'https://www.instagram.com/' });
-  const meta = parseMeta(text, source);
-  const displayUrls = [...text.matchAll(/"display_url"\s*:\s*"([^"]+)"/g)]
-    .map(match => decodeJsString(match[1]).replace(/\\u0026/g, '&').replace(/\\\//g, '/'));
-  const caption = text.match(/<div[^>]+class=["'][^"']*(?:Caption|caption)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1] || '';
+  let { text } = await fetchText(source, { referer: 'https://www.instagram.com/' });
+  let meta = parseMeta(text, source);
+  let states = parseJsonScripts(text);
+  let post = findBestObject(states, value => {
+    let score = 0;
+    if (code && (value.shortcode === code || value.code === code)) score += 12;
+    if (value.edge_media_to_caption || value.caption?.text) score += 4;
+    if (value.owner?.username || value.user?.username) score += 2;
+    if (value.display_url || value.carousel_media || value.edge_sidecar_to_children) score += 3;
+    return score;
+  });
+  if (!post && !meta.description && !meta.images.length && source.toString() !== target.toString()) {
+    try {
+      const direct = await fetchText(target, { referer: 'https://www.instagram.com/' });
+      text += direct.text;
+      const directMeta = parseMeta(direct.text, target);
+      if (directMeta.description || directMeta.images.length) meta = directMeta;
+      states = parseJsonScripts(direct.text);
+      post = findBestObject(states, value => {
+        let score = 0;
+        if (code && (value.shortcode === code || value.code === code)) score += 12;
+        if (value.edge_media_to_caption || value.caption?.text) score += 4;
+        if (value.owner?.username || value.user?.username) score += 2;
+        if (value.display_url || value.carousel_media || value.edge_sidecar_to_children) score += 3;
+        return score;
+      });
+    } catch {}
+  }
+  const edges = post?.edge_sidecar_to_children?.edges || [];
+  const mediaItems = [post, ...edges.map(edge => edge?.node), ...(post?.carousel_media || [])].filter(Boolean);
+  const media = unique(mediaItems.flatMap(item => [
+    item.display_url,
+    item.thumbnail_src,
+    ...imageValues(item.image_versions2?.candidates),
+  ]));
+  const caption = firstValue(
+    post?.caption?.text,
+    post?.edge_media_to_caption?.edges?.[0]?.node?.text,
+    text.match(/<div[^>]+class=["'][^"']*(?:Caption|caption)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1],
+    meta.description,
+  );
+  const author = firstValue(post?.owner?.username, post?.user?.username, meta.author);
+  const hasPublicContent = Boolean(caption || media.length || meta.images.length);
   return finalResult({
-    title: meta.title,
-    description: firstValue(meta.description, caption),
-    author: meta.author,
-    images: unique([...displayUrls, ...meta.images]),
-    strategy: code ? 'instagram-embed' : 'instagram-page',
-    status: /login|log in|登录/i.test(meta.title) ? 'login_required' : 'ok',
+    title: firstValue(author && '@' + author + ' on Instagram', meta.title),
+    description: caption,
+    author,
+    images: unique([...media, ...meta.images]),
+    strategy: post ? 'instagram-json-state' : code ? 'instagram-embed' : 'instagram-page',
+    status: /login|log in|登录/i.test(meta.title)
+      ? 'login_required'
+      : hasPublicContent ? 'ok' : 'partial',
   }, target, requestUrl);
 }
 
@@ -596,18 +646,43 @@ async function extractDouyin(target, requestUrl) {
 }
 
 async function extractThreads(target, requestUrl) {
-  const { response, text } = await fetchText(target, { referer: 'https://www.threads.net/' });
+  const { response, text } = await fetchText(target, { referer: 'https://www.threads.com/' });
   const finalTarget = safeUrl(response.url) || target;
   const meta = parseMeta(text, finalTarget);
-  const textValue = decodeJsString(text.match(/"text_post_app_info"[\s\S]{0,3000}?"text"\s*:\s*"([^"]+)"/i)?.[1] || '');
-  const displayUrls = [...text.matchAll(/"display_url"\s*:\s*"([^"]+)"/g)]
-    .map(match => decodeJsString(match[1]).replace(/\\u0026/g, '&').replace(/\\\//g, '/'));
+  const code = finalTarget.pathname.match(/\/(?:post|t)\/([^/?]+)/i)?.[1] || target.pathname.match(/\/(?:post|t)\/([^/?]+)/i)?.[1];
+  const states = parseJsonScripts(text);
+  const post = findBestObject(states, value => {
+    let score = 0;
+    if (code && value.code === code) score += 12;
+    if (value.text_post_app_info) score += 4;
+    if (value.caption?.text || typeof value.text === 'string') score += 4;
+    if (value.user?.username || value.user?.full_name) score += 2;
+    if (value.image_versions2 || value.carousel_media || value.video_versions) score += 2;
+    return score;
+  });
+  const fragments = post?.text_post_app_info?.text_fragments;
+  const fragmentText = Array.isArray(fragments)
+    ? fragments.map(item => firstValue(item?.text, item?.plaintext, item?.link?.text)).filter(Boolean).join('')
+    : '';
+  const postText = firstValue(post?.caption?.text, post?.text, fragmentText);
+  const mediaItems = [post, ...(Array.isArray(post?.carousel_media) ? post.carousel_media : [])].filter(Boolean);
+  const media = unique(mediaItems.flatMap(item => [
+    item.display_url,
+    item.thumbnail_url,
+    ...imageValues(item.image_versions2?.candidates),
+    ...imageValues(item.image_versions2),
+  ]));
+  const author = firstValue(post?.user?.username, post?.user?.full_name);
+  const hasPublicContent = Boolean(postText || media.length || meta.description || meta.images.length);
   return finalResult({
-    ...meta,
-    description: firstValue(textValue, meta.description),
-    images: unique([...displayUrls, ...meta.images]),
-    strategy: 'threads-page-state',
-    status: /login|log in|登录/i.test(meta.title) ? 'login_required' : 'ok',
+    title: firstValue(author && '@' + author + ' on Threads', meta.title),
+    description: firstValue(postText, meta.description),
+    author,
+    images: unique([...media, ...meta.images]),
+    strategy: post ? 'threads-json-state' : 'threads-page-state',
+    status: /login|log in|登录/i.test(meta.title)
+      ? 'login_required'
+      : hasPublicContent ? 'ok' : 'partial',
   }, finalTarget, requestUrl);
 }
 
