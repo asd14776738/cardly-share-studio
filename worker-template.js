@@ -56,12 +56,81 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function firstValue(...values) {
+  return values.find(value => value !== undefined && value !== null && value !== '') || '';
+}
+
+function decodeJsString(value) {
+  try { return JSON.parse('"' + String(value || '').replace(/"/g, '\\"') + '"'); }
+  catch { return decode(value); }
+}
+
+function parseJsonBlock(html, pattern) {
+  const raw = html.match(pattern)?.[1];
+  if (!raw) return null;
+  try { return JSON.parse(raw.trim().replace(/;$/, '').replace(/\bundefined\b/g, 'null')); }
+  catch { return null; }
+}
+
+function findBestObject(root, scorer) {
+  let best = null;
+  let bestScore = 0;
+  const seen = new Set();
+  const walk = value => {
+    if (!value || typeof value !== 'object' || seen.has(value)) return;
+    seen.add(value);
+    const score = scorer(value);
+    if (score > bestScore) { best = value; bestScore = score; }
+    if (seen.size > 25000) return;
+    for (const child of Object.values(value)) walk(child);
+  };
+  walk(root);
+  return best;
+}
+
+function imagesFromHtml(html, base) {
+  const images = [];
+  for (const tag of html.match(/<img\b[^>]*>/gi) || []) {
+    const value = tag.match(/(?:data-src|data-original|src)=["']([^"']+)["']/i)?.[1];
+    const valid = safeUrl(decode(value), base);
+    if (valid) images.push(valid.toString());
+  }
+  return unique(images);
+}
+
+function imageValues(value) {
+  const list = Array.isArray(value) ? value : value ? [value] : [];
+  return unique(list.flatMap(item => {
+    if (typeof item === 'string') return [item];
+    if (!item || typeof item !== 'object') return [];
+    const nested = item.infoList || item.urlList || item.url_list || item.urls || [];
+    return [
+      item.urlDefault, item.urlPre, item.url, item.src, item.originUrl, item.original,
+      item.picUrl, item.thumbnailUrl,
+      ...(Array.isArray(nested) ? nested.map(entry => typeof entry === 'string' ? entry : entry?.url) : []),
+    ];
+  }));
+}
+
 function proxied(src, requestUrl) {
   const valid = safeUrl(src);
   if (!valid) return '';
   const proxy = new URL('/api/image', requestUrl);
   proxy.searchParams.set('url', valid.toString());
   return proxy.toString();
+}
+
+function imageReferer(target) {
+  const host = target.hostname.toLowerCase();
+  if (host.includes('twimg.com')) return 'https://x.com/';
+  if (host.includes('sinaimg.cn')) return 'https://weibo.com/';
+  if (host.includes('mmbiz.qpic.cn')) return 'https://mp.weixin.qq.com/';
+  if (host.includes('xhscdn.com')) return 'https://www.xiaohongshu.com/';
+  if (host.includes('zhimg.com')) return 'https://www.zhihu.com/';
+  if (host.includes('music.126.net')) return 'https://music.163.com/';
+  if (host.includes('gtimg.cn')) return 'https://y.qq.com/';
+  if (host.includes('okjike.com')) return 'https://web.okjike.com/';
+  return target.origin + '/';
 }
 
 function finalResult(data, target, requestUrl) {
@@ -206,10 +275,298 @@ async function extractWeibo(target, requestUrl) {
   return finalResult(parseMeta(text, target), target, requestUrl);
 }
 
-async function extractGeneric(target, requestUrl) {
+async function fetchJson(url, headers = {}) {
+  const response = await fetch(url, {
+    headers: {
+      'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36',
+      'accept-language': 'zh-CN,zh;q=0.9,en;q=0.7',
+      accept: 'application/json,text/plain,*/*',
+      ...headers,
+    },
+    redirect: 'follow',
+  });
+  if (!response.ok) throw new Error('JSON upstream unavailable: ' + response.status);
+  return response.json();
+}
+
+async function extractZhihu(target, requestUrl) {
+  const { response, text } = await fetchText(target);
+  const finalTarget = safeUrl(response.url) || target;
+  const meta = parseMeta(text, finalTarget);
+  const state = parseJsonBlock(text, /<script[^>]+id=["']js-initialData["'][^>]*>([\s\S]*?)<\/script>/i);
+  const entities = state?.initialState?.entities || state?.entities || {};
+  const questionId = finalTarget.pathname.match(/\/question\/(\d+)/)?.[1];
+  const answerId = finalTarget.pathname.match(/\/answer\/(\d+)/)?.[1];
+  const articleId = finalTarget.pathname.match(/\/p\/(\d+)/)?.[1];
+  const question = questionId ? entities.questions?.[questionId] : null;
+  const answer = answerId ? entities.answers?.[answerId] : null;
+  const article = articleId ? entities.articles?.[articleId] : null;
+  const best = article || answer || question || findBestObject(state, value => {
+    let score = 0;
+    if (typeof value.content === 'string' && value.content.length > 80) score += 5;
+    if (typeof value.title === 'string') score += 2;
+    if (value.author?.name || value.author?.headline) score += 2;
+    if (value.id || value.token) score += 1;
+    return score;
+  });
+  const content = firstValue(best?.content, best?.detail, best?.excerpt, best?.description);
+  return finalResult({
+    title: firstValue(article?.title, question?.title, best?.title, meta.title),
+    description: firstValue(content, meta.description),
+    author: firstValue(best?.author?.name, best?.author?.urlToken, meta.author),
+    images: unique([
+      ...meta.images,
+      ...imageValues(firstValue(best?.imageUrl, best?.image, best?.thumbnail)),
+      ...imagesFromHtml(content, finalTarget),
+    ]),
+    strategy: 'zhihu-initial-state',
+  }, finalTarget, requestUrl);
+}
+
+async function extractWechat(target, requestUrl) {
+  const { response, text } = await fetchText(target, { referer: 'https://mp.weixin.qq.com/' });
+  const finalTarget = safeUrl(response.url) || target;
+  const meta = parseMeta(text, finalTarget);
+  const variable = name => {
+    const pattern = new RegExp('(?:var\\s+)?' + name + '\\s*=\\s*([\\\"\\\'])([\\s\\S]*?)\\1\\s*;', 'i');
+    return decodeJsString(text.match(pattern)?.[2] || '');
+  };
+  const content = text.match(/<div[^>]+id=["']js_content["'][^>]*>([\s\S]*?)(?:<script\b|<div[^>]+id=["']js_pc_qr_code["'])/i)?.[1] || '';
+  const contentText = textOnly(content);
+  return finalResult({
+    title: firstValue(variable('msg_title'), meta.title),
+    description: firstValue(variable('msg_desc'), meta.description, contentText.slice(0, 4000)),
+    author: firstValue(variable('nickname'), meta.author),
+    images: unique([
+      variable('msg_cdn_url'),
+      ...imagesFromHtml(content, finalTarget),
+      ...meta.images,
+    ]),
+    strategy: 'wechat-article-html',
+    status: /环境异常|访问过于频繁|verify|验证码/i.test(meta.title + text.slice(0, 5000)) ? 'login_required' : 'ok',
+  }, finalTarget, requestUrl);
+}
+
+async function extractXiaohongshu(target, requestUrl) {
+  const { response, text } = await fetchText(target, { referer: 'https://www.xiaohongshu.com/' });
+  const finalTarget = safeUrl(response.url) || target;
+  const meta = parseMeta(text, finalTarget);
+  const state = parseJsonBlock(text, /window\.__INITIAL_STATE__\s*=\s*([\s\S]*?)<\/script>/i) ||
+    parseJsonBlock(text, /<script[^>]+id=["']__INITIAL_STATE__["'][^>]*>([\s\S]*?)<\/script>/i);
+  const note = findBestObject(state, value => {
+    let score = 0;
+    if (typeof value.desc === 'string' || typeof value.noteId === 'string' || typeof value.note_id === 'string') score += 4;
+    if (Array.isArray(value.imageList) || Array.isArray(value.images)) score += 4;
+    if (value.user?.nickname || value.user?.nickName) score += 2;
+    if (typeof value.title === 'string') score += 1;
+    return score;
+  });
+  const media = [
+    ...imageValues(note?.imageList),
+    ...imageValues(note?.images),
+    ...imageValues(note?.cover),
+  ];
+  return finalResult({
+    title: firstValue(note?.title, note?.displayTitle, meta.title),
+    description: firstValue(note?.desc, note?.description, meta.description),
+    author: firstValue(note?.user?.nickname, note?.user?.nickName, note?.user?.name, meta.author),
+    images: unique([...media, ...meta.images]),
+    strategy: state && note ? 'xiaohongshu-initial-state' : 'xiaohongshu-metadata',
+    status: /登录|安全验证|verify|captcha/i.test(meta.title + text.slice(0, 5000)) ? 'login_required' : 'ok',
+  }, finalTarget, requestUrl);
+}
+
+async function extractJike(target, requestUrl) {
+  const { response, text } = await fetchText(target, { referer: 'https://web.okjike.com/' });
+  const finalTarget = safeUrl(response.url) || target;
+  const meta = parseMeta(text, finalTarget);
+  const state = parseJsonBlock(text, /<script[^>]+id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i) ||
+    parseJsonBlock(text, /window\.__APOLLO_STATE__\s*=\s*([\s\S]*?)<\/script>/i);
+  const post = findBestObject(state, value => {
+    let score = 0;
+    if (typeof value.content === 'string' || typeof value.text === 'string') score += 4;
+    if (value.creator || value.user) score += 2;
+    if (Array.isArray(value.pictures) || Array.isArray(value.images)) score += 3;
+    if (value.id || value.postId) score += 1;
+    return score;
+  });
+  const creator = post?.creator || post?.user || {};
+  return finalResult({
+    title: firstValue(post?.title, creator?.screenName && creator.screenName + ' 在即刻发布', meta.title),
+    description: firstValue(post?.content, post?.text, post?.description, meta.description),
+    author: firstValue(creator?.screenName, creator?.username, creator?.name, meta.author),
+    images: unique([
+      ...imageValues(post?.pictures),
+      ...imageValues(post?.images),
+      ...imageValues(post?.pictureUrls),
+      ...meta.images,
+    ]),
+    strategy: state && post ? 'jike-ssr-state' : 'jike-metadata',
+  }, finalTarget, requestUrl);
+}
+
+async function extractNeteaseMusic(target, requestUrl) {
+  const id = target.searchParams.get('id') ||
+    target.hash.match(/(?:song\?id=|song\/)(\d+)/)?.[1] ||
+    target.pathname.match(/\/song\/(\d+)/)?.[1];
+  if (!id) return extractGeneric(target, requestUrl, 'netease-metadata');
+  const endpoint = new URL('https://music.163.com/api/song/detail/');
+  endpoint.searchParams.set('ids', '[' + id + ']');
+  const data = await fetchJson(endpoint, { referer: 'https://music.163.com/' });
+  const song = data.songs?.[0];
+  if (!song) throw new Error('NetEase song unavailable');
+  const artists = (song.artists || song.ar || []).map(item => item.name).filter(Boolean).join(' / ');
+  const album = song.album || song.al || {};
+  return finalResult({
+    title: song.name,
+    description: [artists, album.name].filter(Boolean).join(' · '),
+    author: artists,
+    images: [album.picUrl],
+    strategy: 'netease-song-api',
+  }, target, requestUrl);
+}
+
+async function extractQQMusic(target, requestUrl) {
+  const mid = target.searchParams.get('songmid') ||
+    target.pathname.match(/\/(?:songDetail|song)\/([A-Za-z0-9]+)/i)?.[1];
+  if (!mid) return extractGeneric(target, requestUrl, 'qqmusic-metadata');
+  const endpoint = new URL('https://c.y.qq.com/v8/fcg-bin/fcg_play_single_song.fcg');
+  endpoint.searchParams.set('songmid', mid);
+  endpoint.searchParams.set('format', 'json');
+  endpoint.searchParams.set('platform', 'yqq');
+  const data = await fetchJson(endpoint, { referer: 'https://y.qq.com/' });
+  const song = data.data?.[0];
+  if (!song) throw new Error('QQ Music song unavailable');
+  const artists = (song.singer || []).map(item => item.name).filter(Boolean).join(' / ');
+  const albumMid = firstValue(song.albummid, song.album?.mid);
+  const cover = albumMid ? 'https://y.gtimg.cn/music/photo_new/T002R800x800M000' + albumMid + '.jpg' : '';
+  return finalResult({
+    title: firstValue(song.songname, song.name),
+    description: [artists, firstValue(song.albumname, song.album?.name)].filter(Boolean).join(' · '),
+    author: artists,
+    images: [cover],
+    strategy: 'qqmusic-song-api',
+  }, target, requestUrl);
+}
+
+async function extractTelegram(target, requestUrl) {
+  const parts = target.pathname.split('/').filter(Boolean);
+  if (parts.length >= 2) {
+    const embed = new URL('https://t.me/' + parts[0] + '/' + parts[1]);
+    embed.searchParams.set('embed', '1');
+    embed.searchParams.set('mode', 'tme');
+    const { text } = await fetchText(embed);
+    const body = text.match(/<div[^>]+class=["'][^"']*tgme_widget_message_text[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1] || '';
+    const author = textOnly(text.match(/<a[^>]+class=["'][^"']*tgme_widget_message_author_name[^"']*["'][^>]*>([\s\S]*?)<\/a>/i)?.[1] || '');
+    const photos = [...text.matchAll(/background-image\s*:\s*url\(['"]?([^'")]+)['"]?\)/gi)].map(match => match[1]);
+    const meta = parseMeta(text, embed);
+    return finalResult({
+      title: author ? author + ' · Telegram' : meta.title,
+      description: firstValue(body, meta.description),
+      author,
+      images: unique([...photos, ...meta.images]),
+      strategy: 'telegram-embed',
+    }, target, requestUrl);
+  }
+  return extractGeneric(target, requestUrl, 'telegram-metadata');
+}
+
+async function extractInstagram(target, requestUrl) {
+  const code = target.pathname.match(/\/(?:p|reel|tv)\/([^/]+)/i)?.[1];
+  const source = code ? new URL('https://www.instagram.com/p/' + code + '/embed/captioned/') : target;
+  const { text } = await fetchText(source, { referer: 'https://www.instagram.com/' });
+  const meta = parseMeta(text, source);
+  const displayUrls = [...text.matchAll(/"display_url"\s*:\s*"([^"]+)"/g)]
+    .map(match => decodeJsString(match[1]).replace(/\\u0026/g, '&').replace(/\\\//g, '/'));
+  const caption = text.match(/<div[^>]+class=["'][^"']*(?:Caption|caption)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1] || '';
+  return finalResult({
+    title: meta.title,
+    description: firstValue(meta.description, caption),
+    author: meta.author,
+    images: unique([...displayUrls, ...meta.images]),
+    strategy: code ? 'instagram-embed' : 'instagram-page',
+    status: /login|log in|登录/i.test(meta.title) ? 'login_required' : 'ok',
+  }, target, requestUrl);
+}
+
+async function extractDouban(target, requestUrl) {
+  const { response, text } = await fetchText(target, { referer: 'https://www.douban.com/' });
+  const finalTarget = safeUrl(response.url) || target;
+  const meta = parseMeta(text, finalTarget);
+  const summary = text.match(/<(?:span|div)[^>]+(?:property=["']v:summary["']|id=["']link-report["'])[^>]*>([\s\S]*?)<\/(?:span|div)>/i)?.[1] || '';
+  const author = textOnly(text.match(/<a[^>]+rel=["']v:directedBy["'][^>]*>([\s\S]*?)<\/a>/i)?.[1] || '');
+  return finalResult({
+    ...meta,
+    description: firstValue(summary, meta.description),
+    author: firstValue(author, meta.author),
+    strategy: 'douban-structured-page',
+  }, finalTarget, requestUrl);
+}
+
+async function extractDouyin(target, requestUrl) {
+  const { response, text } = await fetchText(target, { referer: 'https://www.douyin.com/' });
+  const finalTarget = safeUrl(response.url) || target;
+  const meta = parseMeta(text, finalTarget);
+  const raw = text.match(/<script[^>]+id=["']RENDER_DATA["'][^>]*>([\s\S]*?)<\/script>/i)?.[1];
+  let state = null;
+  if (raw) {
+    try { state = JSON.parse(decodeURIComponent(decode(raw))); } catch {}
+  }
+  const aweme = findBestObject(state, value => {
+    let score = 0;
+    if (value.aweme_id || value.awemeId) score += 4;
+    if (typeof value.desc === 'string') score += 3;
+    if (value.video || value.images) score += 3;
+    if (value.author?.nickname) score += 2;
+    return score;
+  });
+  const video = aweme?.video || {};
+  return finalResult({
+    title: firstValue(aweme?.desc, meta.title),
+    description: firstValue(aweme?.desc, meta.description),
+    author: firstValue(aweme?.author?.nickname, aweme?.author?.unique_id, meta.author),
+    images: unique([
+      ...imageValues(aweme?.images),
+      ...imageValues(video.cover),
+      ...imageValues(video.origin_cover),
+      ...imageValues(video.dynamic_cover),
+      ...meta.images,
+    ]),
+    strategy: state && aweme ? 'douyin-render-data' : 'douyin-metadata',
+    status: /验证码|verify|captcha|登录/i.test(meta.title + text.slice(0, 5000)) ? 'login_required' : 'ok',
+  }, finalTarget, requestUrl);
+}
+
+async function extractThreads(target, requestUrl) {
+  const { response, text } = await fetchText(target, { referer: 'https://www.threads.net/' });
+  const finalTarget = safeUrl(response.url) || target;
+  const meta = parseMeta(text, finalTarget);
+  const textValue = decodeJsString(text.match(/"text_post_app_info"[\s\S]{0,3000}?"text"\s*:\s*"([^"]+)"/i)?.[1] || '');
+  const displayUrls = [...text.matchAll(/"display_url"\s*:\s*"([^"]+)"/g)]
+    .map(match => decodeJsString(match[1]).replace(/\\u0026/g, '&').replace(/\\\//g, '/'));
+  return finalResult({
+    ...meta,
+    description: firstValue(textValue, meta.description),
+    images: unique([...displayUrls, ...meta.images]),
+    strategy: 'threads-page-state',
+    status: /login|log in|登录/i.test(meta.title) ? 'login_required' : 'ok',
+  }, finalTarget, requestUrl);
+}
+
+async function extractEmbedOrMetadata(target, requestUrl, strategy) {
   const { response, text } = await fetchText(target);
   const finalTarget = safeUrl(response.url) || target;
   const data = parseMeta(text, finalTarget);
+  data.strategy = strategy;
+  if (/login|登录|安全验证|captcha|verify/i.test(data.title)) data.status = 'login_required';
+  return finalResult(data, finalTarget, requestUrl);
+}
+
+async function extractGeneric(target, requestUrl, strategy = 'html-metadata') {
+  const { response, text } = await fetchText(target);
+  const finalTarget = safeUrl(response.url) || target;
+  const data = parseMeta(text, finalTarget);
+  data.strategy = strategy;
   if (/Sina Visitor System/i.test(data.title) || /登录.*小红书|安全验证|verify/i.test(data.title)) data.status = 'login_required';
   return finalResult(data, finalTarget, requestUrl);
 }
@@ -217,9 +574,25 @@ async function extractGeneric(target, requestUrl) {
 async function extract(target, requestUrl) {
   const { platform } = platformFor(target);
   if (platform === 'x') return extractX(target, requestUrl);
-  if (platform === 'spotify') return extractSpotify(target, requestUrl);
   if (platform === 'weibo') return extractWeibo(target, requestUrl);
-  return extractGeneric(target, requestUrl);
+  if (platform === 'wechat') return extractWechat(target, requestUrl);
+  if (platform === 'zhihu') return extractZhihu(target, requestUrl);
+  if (platform === 'xiaohongshu') return extractXiaohongshu(target, requestUrl);
+  if (platform === 'jike') return extractJike(target, requestUrl);
+  if (platform === 'netease_music') return extractNeteaseMusic(target, requestUrl);
+  if (platform === 'qq_music') return extractQQMusic(target, requestUrl);
+  if (platform === 'telegram') return extractTelegram(target, requestUrl);
+  if (platform === 'spotify') return extractSpotify(target, requestUrl);
+  if (platform === 'instagram') return extractInstagram(target, requestUrl);
+  if (platform === 'threads') return extractThreads(target, requestUrl);
+  if (platform === 'douban') return extractDouban(target, requestUrl);
+  if (platform === 'douyin') return extractDouyin(target, requestUrl);
+  const strategies = {
+    apple_music: 'applemusic-structured-metadata',
+    chatgpt: 'chatgpt-shared-page',
+    kimi: 'kimi-shared-page',
+  };
+  return extractEmbedOrMetadata(target, requestUrl, strategies[platform] || 'html-metadata');
 }
 
 export default {
@@ -233,7 +606,7 @@ export default {
           headers: {
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36',
             accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
-            referer: target.origin + '/',
+            referer: imageReferer(target),
           },
           redirect: 'follow',
         });
