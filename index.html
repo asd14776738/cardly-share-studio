@@ -7,7 +7,7 @@
     <meta name="description" content="把网页和社交内容链接变成精美的分享卡片。" />
     <title>Cardly — 链接卡片生成器</title>
     <link rel="preconnect" href="https://images.unsplash.com" />
-    <link rel="stylesheet" href="./styles.css?v=15" />
+    <link rel="stylesheet" href="./styles.css?v=16" />
   </head>
   <body>
     <header class="topbar">
@@ -20,7 +20,7 @@
         <a href="#recent">灵感</a>
       </nav>
       <button class="button button-dark header-export" data-download>
-        <span>导出图片</span>
+        <span>下载 PNG</span>
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9m0 0 3.5-3.5M10 12 6.5 8.5M4 14.5V17h12v-2.5"/></svg>
       </button>
     </header>
@@ -28,7 +28,7 @@
     <main>
       <section class="intro" aria-labelledby="page-title">
         <h1 id="page-title">把链接，变成值得分享的卡片</h1>
-        <p>粘贴网页或社交内容链接，几秒完成排版。</p>
+        <p>粘贴公开内容链接，自动提取标题、正文与图片。</p>
       </section>
 
       <section class="studio" id="studio">
@@ -47,6 +47,25 @@
               <button class="button button-blue" id="generate-button">生成卡片</button>
             </div>
             <p class="input-hint" id="source-hint">支持文章、作品集、产品页等公开网页</p>
+            <div class="platform-rail" aria-label="支持的平台">
+              <span class="platform-chip zhihu" title="知乎">知</span>
+              <span class="platform-chip weibo" title="微博">微</span>
+              <span class="platform-chip wechat" title="微信公众号">聊</span>
+              <span class="platform-chip xiaohongshu" title="小红书">RED</span>
+              <span class="platform-chip jike" title="即刻">J</span>
+              <span class="platform-chip netease" title="网易云音乐">♪</span>
+              <span class="platform-chip qqmusic" title="QQ 音乐">Q</span>
+              <span class="platform-chip x" title="X">𝕏</span>
+              <span class="platform-chip instagram" title="Instagram">◎</span>
+              <span class="platform-chip threads" title="Threads">@</span>
+              <span class="platform-chip telegram" title="Telegram">↗</span>
+              <span class="platform-chip douban" title="豆瓣">豆</span>
+              <span class="platform-chip douyin" title="抖音">♪</span>
+              <span class="platform-chip spotify" title="Spotify">≋</span>
+              <span class="platform-chip apple" title="Apple Music">♫</span>
+              <span class="platform-chip chatgpt" title="ChatGPT">AI</span>
+              <span class="platform-chip kimi" title="Kimi">K</span>
+            </div>
           </div>
 
           <div class="settings-grid">
@@ -60,16 +79,16 @@
               </div>
             </fieldset>
             <fieldset>
-              <legend>卡片布局</legend>
+              <legend>内容布局</legend>
               <div class="segmented compact" id="layout-control">
-                <button data-layout="editorial" class="active">杂志</button>
-                <button data-layout="minimal">极简</button>
+                <button data-layout="editorial" class="active">编辑排版</button>
+                <button data-layout="minimal">海报排版</button>
               </div>
             </fieldset>
           </div>
 
           <fieldset class="theme-fieldset">
-            <legend>背景主题</legend>
+            <legend>主题</legend>
             <div class="theme-list" id="theme-control">
               <button class="theme-swatch mist active" data-theme="mist" aria-label="雾光"></button>
               <button class="theme-swatch cobalt" data-theme="cobalt" aria-label="钴蓝"></button>
@@ -83,23 +102,23 @@
           <div class="copy-fields">
             <label for="card-title">标题</label>
             <textarea id="card-title" rows="2">在海风与山影之间，重新想象公共空间</textarea>
-            <div class="field-meta"><label for="card-description">主要内容</label><span id="char-count">38 字 · 自动排版</span></div>
+            <div class="field-meta"><label for="card-description">内容摘要</label><span id="char-count">38 字 · 自动排版</span></div>
             <textarea id="card-description" rows="8" maxlength="2000">一座面向海岸的文化建筑，以层叠露台连接城市生活与自然景观。</textarea>
           </div>
 
           <div class="upload-row">
             <div>
-              <strong>内容图片</strong>
+              <strong>添加图片</strong>
               <span id="image-count">可多选，自动排列</span>
             </div>
-            <label class="upload-button" for="image-upload">选择图片</label>
+            <label class="upload-button" for="image-upload">添加图片</label>
             <input id="image-upload" type="file" accept="image/*" multiple hidden />
           </div>
         </div>
 
         <aside class="preview-column" aria-labelledby="preview-title">
           <div class="preview-head">
-            <div><span class="live-dot"></span><h2 id="preview-title">实时预览</h2></div>
+            <div><span class="live-dot"></span><h2 id="preview-title">卡片预览</h2></div>
             <span id="canvas-size">1080 × 自动高度</span>
           </div>
           <div class="preview-stage">
@@ -141,7 +160,7 @@
 
       <section class="recent" id="recent" aria-labelledby="recent-title">
         <div class="section-head">
-          <h2 id="recent-title">最近创作</h2>
+          <h2 id="recent-title">最近生成</h2>
           <button id="clear-recent">清空记录</button>
         </div>
         <div class="recent-grid">
@@ -153,6 +172,6 @@
     </main>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=15"></script>
+    <script src="./app.js?v=16"></script>
   </body>
 </html>
