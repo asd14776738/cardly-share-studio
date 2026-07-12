@@ -70,15 +70,15 @@ const sourceData = {
 };
 
 const state = { ...defaults, images: [...defaults.images] };
-const $ = (selector) => document.querySelector(selector);
-const $$ = (selector) => [...document.querySelectorAll(selector)];
-const card = $('#share-card');
-const titleInput = $('#card-title');
-const descriptionInput = $('#card-description');
-const urlInput = $('#source-url');
+const qs = (selector) => document.querySelector(selector);
+const qsa = (selector) => [...document.querySelectorAll(selector)];
+const card = qs('#share-card');
+const titleInput = qs('#card-title');
+const descriptionInput = qs('#card-description');
+const urlInput = qs('#source-url');
 
 function showToast(message) {
-  const toast = $('#toast');
+  const toast = qs('#toast');
   toast.textContent = message;
   toast.classList.add('show');
   clearTimeout(showToast.timer);
@@ -97,7 +97,7 @@ function contentDensity(text) {
 }
 
 function renderMediaGallery() {
-  const gallery = $('#media-gallery');
+  const gallery = qs('#media-gallery');
   const images = (state.images || []).filter(Boolean).slice(0, 6);
   gallery.className = `media-gallery media-count-${Math.min(images.length, 4)}`;
   gallery.replaceChildren();
@@ -121,35 +121,35 @@ function updateCard() {
   const role = titleRole(state.title);
   const mediaState = (state.images || []).some(Boolean) ? 'has-media' : 'no-media';
   card.className = `share-card theme-${state.theme} ratio-${state.ratio} layout-${state.layout} source-${state.source} density-${density} title-${role} ${mediaState}`;
-  $('#preview-card-title').textContent = state.title;
-  $('#preview-card-description').textContent = state.description;
-  $('#source-name').textContent = sourceData[state.source].name;
-  const sourceIcon = $('#source-icon-image');
-  const sourceFallback = $('.source-brand-fallback');
+  qs('#preview-card-title').textContent = state.title;
+  qs('#preview-card-description').textContent = state.description;
+  qs('#source-name').textContent = sourceData[state.source].name;
+  const sourceIcon = qs('#source-icon-image');
+  const sourceFallback = qs('.source-brand-fallback');
   sourceFallback.textContent = sourceData[state.source].icon;
   sourceIcon.hidden = !state.icon;
   sourceFallback.hidden = Boolean(state.icon);
   sourceIcon.src = state.icon || '';
-  $('#card-kicker').textContent = sourceData[state.source].kicker;
+  qs('#card-kicker').textContent = sourceData[state.source].kicker;
   renderMediaGallery();
   const now = new Date();
   const time = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
   const date = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
-  $('#footer-date').textContent = `${time} · ${date}`;
-  $('#char-count').textContent = `${state.description.length} 字 · ${density === 'short' ? '短内容' : density === 'medium' ? '中等内容' : '长内容'}`;
-  $('#image-count').textContent = state.images?.length ? `${state.images.length} 张图片 · 自动排列` : '可多选，自动排列';
-  $('#canvas-size').textContent = state.ratio === 'auto' ? '1080 × 自动高度' : state.ratio === 'wide' ? '1600 × 900' : state.ratio === 'portrait' ? '1080 × 1350' : '1080 × 1080';
+  qs('#footer-date').textContent = `${time} · ${date}`;
+  qs('#char-count').textContent = `${state.description.length} 字 · ${density === 'short' ? '短内容' : density === 'medium' ? '中等内容' : '长内容'}`;
+  qs('#image-count').textContent = state.images?.length ? `${state.images.length} 张图片 · 自动排列` : '可多选，自动排列';
+  qs('#canvas-size').textContent = state.ratio === 'auto' ? '1080 × 自动高度' : state.ratio === 'wide' ? '1600 × 900' : state.ratio === 'portrait' ? '1080 × 1350' : '1080 × 1080';
 }
 
 function selectSource(source, applyPreset = true) {
   state.source = source;
-  $$('.source-tab').forEach(tab => {
+  qsa('.source-tab').forEach(tab => {
     const selected = tab.dataset.source === source;
     tab.classList.toggle('active', selected);
     tab.setAttribute('aria-selected', String(selected));
   });
   urlInput.placeholder = sourceData[source].placeholder;
-  $('#source-hint').textContent = sourceData[source].hint;
+  qs('#source-hint').textContent = sourceData[source].hint;
   if (applyPreset) {
     state.title = sourceData[source].title;
     state.description = sourceData[source].description;
@@ -162,29 +162,29 @@ function selectSource(source, applyPreset = true) {
   updateCard();
 }
 
-$$('.source-tab').forEach(tab => tab.addEventListener('click', () => selectSource(tab.dataset.source)));
+qsa('.source-tab').forEach(tab => tab.addEventListener('click', () => selectSource(tab.dataset.source)));
 
-$('#ratio-control').addEventListener('click', event => {
+qs('#ratio-control').addEventListener('click', event => {
   const button = event.target.closest('button[data-ratio]');
   if (!button) return;
   state.ratio = button.dataset.ratio;
-  $$('#ratio-control button').forEach(item => item.classList.toggle('active', item === button));
+  qsa('#ratio-control button').forEach(item => item.classList.toggle('active', item === button));
   updateCard();
 });
 
-$('#layout-control').addEventListener('click', event => {
+qs('#layout-control').addEventListener('click', event => {
   const button = event.target.closest('button[data-layout]');
   if (!button) return;
   state.layout = button.dataset.layout;
-  $$('#layout-control button').forEach(item => item.classList.toggle('active', item === button));
+  qsa('#layout-control button').forEach(item => item.classList.toggle('active', item === button));
   updateCard();
 });
 
-$('#theme-control').addEventListener('click', event => {
+qs('#theme-control').addEventListener('click', event => {
   const button = event.target.closest('button[data-theme]');
   if (!button) return;
   state.theme = button.dataset.theme;
-  $$('.theme-swatch').forEach(item => item.classList.toggle('active', item === button));
+  qsa('.theme-swatch').forEach(item => item.classList.toggle('active', item === button));
   updateCard();
 });
 
@@ -195,7 +195,7 @@ descriptionInput.addEventListener('input', () => {
   updateCard();
 });
 
-$('#image-upload').addEventListener('change', async event => {
+qs('#image-upload').addEventListener('change', async event => {
   const files = [...(event.target.files || [])].slice(0, 6);
   if (!files.length) return;
   if (files.some(file => file.size > 8 * 1024 * 1024)) return showToast('每张图片请控制在 8MB 以内');
@@ -210,13 +210,13 @@ $('#image-upload').addEventListener('change', async event => {
   showToast(`已载入 ${state.images.length} 张图片，版式已自动调整`);
 });
 
-$('#source-icon-image').addEventListener('error', () => {
-  $('#source-icon-image').hidden = true;
-  $('.source-brand-fallback').hidden = false;
+qs('#source-icon-image').addEventListener('error', () => {
+  qs('#source-icon-image').hidden = true;
+  qs('.source-brand-fallback').hidden = false;
 });
 
-$('#generate-button').addEventListener('click', async () => {
-  const button = $('#generate-button');
+qs('#generate-button').addEventListener('click', async () => {
+  const button = qs('#generate-button');
   const value = urlInput.value.trim();
   if (!value) { urlInput.focus(); return showToast('请先粘贴内容链接'); }
   try { new URL(value); } catch { urlInput.focus(); return showToast('请输入完整的 https:// 链接'); }
@@ -264,26 +264,26 @@ $('#generate-button').addEventListener('click', async () => {
   }
 });
 
-$('#reset-button').addEventListener('click', () => {
+qs('#reset-button').addEventListener('click', () => {
   Object.assign(state, defaults, { images: [...defaults.images] });
   urlInput.value = defaults.url;
   titleInput.value = defaults.title;
   descriptionInput.value = defaults.description;
-  $$('#ratio-control button').forEach(x => x.classList.toggle('active', x.dataset.ratio === state.ratio));
-  $$('#layout-control button').forEach(x => x.classList.toggle('active', x.dataset.layout === state.layout));
-  $$('.theme-swatch').forEach(x => x.classList.toggle('active', x.dataset.theme === state.theme));
+  qsa('#ratio-control button').forEach(x => x.classList.toggle('active', x.dataset.ratio === state.ratio));
+  qsa('#layout-control button').forEach(x => x.classList.toggle('active', x.dataset.layout === state.layout));
+  qsa('.theme-swatch').forEach(x => x.classList.toggle('active', x.dataset.theme === state.theme));
   selectSource('web', false);
   showToast('已恢复默认样式');
 });
 
-$$('.recent-card').forEach(item => item.addEventListener('click', () => {
+qsa('.recent-card').forEach(item => item.addEventListener('click', () => {
   const preset = item.dataset.preset;
   if (sourceData[preset]) selectSource(preset);
   document.querySelector('#studio').scrollIntoView({ behavior: 'smooth' });
 }));
 
-$('#clear-recent').addEventListener('click', () => {
-  const grid = $('.recent-grid');
+qs('#clear-recent').addEventListener('click', () => {
+  const grid = qs('.recent-grid');
   grid.innerHTML = '';
   grid.classList.add('is-empty');
 });
@@ -446,7 +446,7 @@ async function downloadAutoCard() {
   ctx.font = '500 18px Arial, sans-serif';
   ctx.fillText(new Date().toLocaleDateString('zh-CN') + ' · CARDLY', contentX, footerY);
   try {
-    const qr = await loadImage($('.qr-code').src);
+    const qr = await loadImage(qs('.qr-code').src);
     ctx.globalAlpha = 1;
     ctx.drawImage(qr, width - contentX - 72, footerY - 12, 72, 72);
   } catch {}
@@ -522,5 +522,5 @@ async function downloadCard() {
   }, 'image/png');
 }
 
-$$('[data-download]').forEach(button => button.addEventListener('click', downloadCard));
+qsa('[data-download]').forEach(button => button.addEventListener('click', downloadCard));
 updateCard();
