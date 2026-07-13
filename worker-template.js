@@ -64,6 +64,31 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function mediaKey(value) {
+  const decoded = decode(value);
+  const parsed = safeUrl(decoded);
+  if (!parsed) return decoded;
+  const host = parsed.hostname.toLowerCase().replace(/^sns-webpic-[^.]+\./, '');
+  if (host.endsWith('xhscdn.com')) {
+    return host + parsed.pathname.replace(/![^/]+$/, '');
+  }
+  for (const key of ['imageView2', 'imageMogr2', 'x-oss-process', 'x-image-process', 'w', 'h', 'width', 'height', 'q', 'quality', 'format']) {
+    parsed.searchParams.delete(key);
+  }
+  parsed.hash = '';
+  return parsed.toString();
+}
+
+function uniqueMedia(values) {
+  const seen = new Set();
+  return values.filter(Boolean).filter(value => {
+    const key = mediaKey(value);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function firstValue(...values) {
   return values.find(value => value !== undefined && value !== null && value !== '') || '';
 }
@@ -82,10 +107,11 @@ function parseJsonBlock(html, pattern) {
 
 function parseJsonScripts(html) {
   const values = [];
-  for (const script of html.match(/<script[^>]+type=["']application\/json["'][^>]*>[\s\S]*?<\/script>/gi) || []) {
+  for (const script of html.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) || []) {
     const raw = script.replace(/^.*?>/s, '').replace(/<\/script>$/i, '').trim();
-    if (!raw) continue;
-    try { values.push(JSON.parse(decode(raw))); } catch {}
+    if (!raw || (!raw.startsWith('{') && !raw.startsWith('['))) continue;
+    try { values.push(JSON.parse(decode(raw))); }
+    catch { try { values.push(JSON.parse(raw)); } catch {} }
   }
   return values;
 }
@@ -157,7 +183,7 @@ function imageReferer(target) {
 
 function finalResult(data, target, requestUrl) {
   const base = platformFor(target);
-  const directImages = unique((data.images || []).map(value => {
+  const directImages = uniqueMedia((data.images || []).map(value => {
     const decoded = decode(value);
     return decoded ? safeUrl(decoded, target)?.toString() || '' : '';
   }));
@@ -278,33 +304,73 @@ async function extractSpotify(target, requestUrl) {
 async function extractWeibo(target, requestUrl) {
   const id = target.pathname.split('/').filter(Boolean).pop();
   if (id) {
-    try {
-      const api = new URL('https://weibo.com/ajax/statuses/show');
-      api.searchParams.set('id', id);
-      const response = await fetch(api, {
-        headers: { 'user-agent': 'Mozilla/5.0', referer: target.origin + '/' },
-      });
-      if (response.ok) {
-        const post = await response.json();
-        const pictures = (post.pic_infos ? Object.values(post.pic_infos) : post.pics || [])
-          .map(item => item.largest?.url || item.large?.url || item.original?.url || item.url);
+    const endpoints = [
+      new URL('https://weibo.com/ajax/statuses/show?id=' + encodeURIComponent(id)),
+      new URL('https://m.weibo.cn/statuses/show?id=' + encodeURIComponent(id)),
+    ];
+    for (const endpoint of endpoints) {
+      try {
+        const payload = await fetchJson(endpoint, {
+          'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148',
+          referer: target.toString(),
+          'x-requested-with': 'XMLHttpRequest',
+        });
+        const post = payload?.data || payload;
+        if (!post || !(post.text_raw || post.text || post.user)) continue;
+        const pictureObjects = post.pic_infos ? Object.values(post.pic_infos) : post.pics || [];
+        const pictures = pictureObjects.flatMap(item =>
+          imageValues(item?.largest || item?.large || item?.original || item)
+        );
         return finalResult({
-          title: post.user?.screen_name ? post.user.screen_name + ' 的微博' : '微博',
+          title: post.user?.screen_name ? post.user.screen_name + ' \u7684\u5fae\u535a' : '\u5fae\u535a',
           description: post.text_raw || post.text || '',
           author: post.user?.screen_name || '',
-          images: pictures,
-          strategy: 'weibo-public-json',
+          images: uniqueMedia([...pictures, ...imageValues(post.page_info?.page_pic)]),
+          strategy: endpoint.hostname.startsWith('m.') ? 'weibo-mobile-json' : 'weibo-public-json',
         }, target, requestUrl);
-      }
-    } catch {}
+      } catch {}
+    }
   }
-  const { text } = await fetchText(target);
-  if (/Sina Visitor System|passport\.weibo\.com/i.test(text)) {
-    return finalResult({ title: '微博', description: '', images: [], strategy: 'weibo-login-wall', status: 'login_required' }, target, requestUrl);
-  }
-  return finalResult(parseMeta(text, target), target, requestUrl);
-}
 
+  let text = '';
+  let finalTarget = target;
+  try {
+    const page = await fetchText(target);
+    text = page.text;
+    finalTarget = safeUrl(page.response.url) || target;
+  } catch {}
+  const meta = parseMeta(text, finalTarget);
+  const renderData = parseJsonBlock(text, /\$render_data\s*=\s*([\s\S]*?)<\/script>/i);
+  const renderedPost = findBestObject(renderData, value => {
+    let score = 0;
+    if (value?.user?.screen_name) score += 3;
+    if (value?.text || value?.text_raw) score += 5;
+    if (value?.id || value?.mid) score += 2;
+    return score;
+  });
+  if (renderedPost) {
+    return finalResult({
+      title: renderedPost.user?.screen_name ? renderedPost.user.screen_name + ' \u7684\u5fae\u535a' : meta.title,
+      description: firstValue(renderedPost.text_raw, renderedPost.text, meta.description),
+      author: firstValue(renderedPost.user?.screen_name, meta.author),
+      images: uniqueMedia([
+        ...imageValues(renderedPost.pics),
+        ...imageValues(renderedPost.pic_infos && Object.values(renderedPost.pic_infos)),
+        ...meta.images,
+      ]),
+      strategy: 'weibo-render-data',
+    }, finalTarget, requestUrl);
+  }
+
+  const blocked = /Sina Visitor System|passport\.weibo\.com|\u767b\u5f55|login/i.test(text);
+  const hasMeta = Boolean(meta.description || meta.images.length || (meta.title && !/\u5fae\u535a|weibo/i.test(meta.title)));
+  return finalResult({
+    ...meta,
+    title: firstValue(meta.title, '\u5fae\u535a'),
+    strategy: blocked ? 'weibo-login-wall' : 'weibo-metadata',
+    status: blocked && !hasMeta ? 'login_required' : hasMeta ? 'partial' : 'login_required',
+  }, finalTarget, requestUrl);
+}
 async function fetchJson(url, headers = {}) {
   const response = await fetch(url, {
     headers: {
@@ -410,8 +476,13 @@ async function extractXiaohongshu(target, requestUrl) {
   const meta = parseMeta(text, finalTarget);
   const state = parseJsonBlock(text, /window\.__INITIAL_STATE__\s*=\s*([\s\S]*?)<\/script>/i) ||
     parseJsonBlock(text, /<script[^>]+id=["']__INITIAL_STATE__["'][^>]*>([\s\S]*?)<\/script>/i);
+  const targetNoteId = finalTarget.pathname.match(/\/(?:discovery\/item|explore)\/([^/?]+)/i)?.[1] ||
+    target.pathname.match(/\/(?:discovery\/item|explore)\/([^/?]+)/i)?.[1] || '';
   const note = findBestObject(state, value => {
+    const candidateId = String(value?.noteId || value?.note_id || value?.id || '');
+    if (targetNoteId && candidateId && candidateId !== targetNoteId) return 0;
     let score = 0;
+    if (targetNoteId && candidateId === targetNoteId) score += 12;
     if (typeof value.desc === 'string' || typeof value.noteId === 'string' || typeof value.note_id === 'string') score += 4;
     if (Array.isArray(value.imageList) || Array.isArray(value.images)) score += 4;
     if (value.user?.nickname || value.user?.nickName) score += 2;
@@ -419,23 +490,24 @@ async function extractXiaohongshu(target, requestUrl) {
     return score;
   });
   const isNote = Boolean(note && (note.noteId || note.note_id || typeof note.desc === 'string' || Array.isArray(note.imageList)));
-  const media = [
+  const noteMedia = uniqueMedia([
     ...imageValues(note?.imageList),
     ...imageValues(note?.images),
-    ...imageValues(note?.cover),
-  ];
-  const blocked = /登录|安全验证|verify|captcha/i.test(meta.title + text.slice(0, 5000)) ||
-    (!isNote && !meta.description && /小红书|ICP备/i.test(meta.title));
+  ]);
+  const media = noteMedia.length
+    ? noteMedia
+    : uniqueMedia([...imageValues(note?.cover), ...meta.images]);
+  const blocked = /\u767b\u5f55|\u5b89\u5168\u9a8c\u8bc1|verify|captcha/i.test(meta.title + text.slice(0, 5000)) ||
+    (!isNote && !meta.description && /\u5c0f\u7ea2\u4e66|ICP/i.test(meta.title));
   return finalResult({
     title: firstValue(note?.title, note?.displayTitle, meta.title),
     description: firstValue(note?.desc, note?.description, meta.description),
     author: firstValue(note?.user?.nickname, note?.user?.nickName, note?.user?.name, meta.author),
-    images: unique([...media, ...meta.images]),
+    images: media,
     strategy: isNote ? 'xiaohongshu-initial-state' : blocked ? 'xiaohongshu-login-wall' : 'xiaohongshu-metadata',
     status: blocked ? 'login_required' : 'ok',
   }, finalTarget, requestUrl);
 }
-
 async function extractJike(target, requestUrl) {
   const { response, text } = await fetchText(target, { referer: 'https://web.okjike.com/' });
   const finalTarget = safeUrl(response.url) || target;
@@ -537,62 +609,86 @@ async function extractInstagram(target, requestUrl) {
   const mediaPath = target.pathname.match(/\/(p|reel|tv)\/([^/]+)/i);
   const mediaType = mediaPath?.[1]?.toLowerCase();
   const code = mediaPath?.[2];
-  const source = code ? new URL('https://www.instagram.com/' + mediaType + '/' + code + '/embed/captioned/') : target;
-  let { text } = await fetchText(source, { referer: 'https://www.instagram.com/' });
-  let meta = parseMeta(text, source);
-  let states = parseJsonScripts(text);
-  let post = findBestObject(states, value => {
+  const scorePost = value => {
+    const candidateCode = value?.shortcode || value?.code;
+    if (code && candidateCode && candidateCode !== code) return 0;
     let score = 0;
-    if (code && (value.shortcode === code || value.code === code)) score += 12;
+    if (code && candidateCode === code) score += 12;
     if (value.edge_media_to_caption || value.caption?.text) score += 4;
     if (value.owner?.username || value.user?.username) score += 2;
     if (value.display_url || value.carousel_media || value.edge_sidecar_to_children) score += 3;
     return score;
-  });
-  if (!post && !meta.description && !meta.images.length && source.toString() !== target.toString()) {
+  };
+  const sources = code
+    ? [
+        new URL('https://www.instagram.com/' + mediaType + '/' + code + '/embed/captioned/'),
+        new URL('https://www.instagram.com/' + mediaType + '/' + code + '/embed/'),
+        target,
+      ]
+    : [target];
+  let text = '';
+  let meta = { title: '', description: '', author: '', images: [] };
+  let states = [];
+  let post = null;
+
+  for (const source of sources) {
     try {
-      const direct = await fetchText(target, { referer: 'https://www.instagram.com/' });
-      text += direct.text;
-      const directMeta = parseMeta(direct.text, target);
-      if (directMeta.description || directMeta.images.length) meta = directMeta;
-      states = parseJsonScripts(direct.text);
-      post = findBestObject(states, value => {
-        let score = 0;
-        if (code && (value.shortcode === code || value.code === code)) score += 12;
-        if (value.edge_media_to_caption || value.caption?.text) score += 4;
-        if (value.owner?.username || value.user?.username) score += 2;
-        if (value.display_url || value.carousel_media || value.edge_sidecar_to_children) score += 3;
-        return score;
+      const page = await fetchText(source, {
+        referer: 'https://www.instagram.com/',
+        'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148',
       });
+      text += '\n' + page.text;
+      const nextMeta = parseMeta(page.text, source);
+      if (!meta.description && nextMeta.description) meta = nextMeta;
+      else meta.images = uniqueMedia([...(meta.images || []), ...(nextMeta.images || [])]);
+      states.push(...parseJsonScripts(page.text));
+      post = findBestObject(states, scorePost);
+      if (post && (post.caption?.text || post.edge_media_to_caption || post.display_url || post.carousel_media)) break;
     } catch {}
   }
+
+  if (!post && code) {
+    try {
+      const jsonUrl = new URL(target);
+      jsonUrl.searchParams.set('__a', '1');
+      jsonUrl.searchParams.set('__d', 'dis');
+      const json = await fetchJson(jsonUrl, {
+        referer: target.toString(),
+        'x-ig-app-id': '936619743392459',
+      });
+      states.push(json);
+      post = findBestObject(states, scorePost);
+    } catch {}
+  }
+
   const edges = post?.edge_sidecar_to_children?.edges || [];
   const mediaItems = [post, ...edges.map(edge => edge?.node), ...(post?.carousel_media || [])].filter(Boolean);
-  const media = unique(mediaItems.flatMap(item => [
+  const media = uniqueMedia(mediaItems.flatMap(item => [
     item.display_url,
     item.thumbnail_src,
     ...imageValues(item.image_versions2?.candidates),
   ]));
-  const caption = firstValue(
+  const rawCaption = firstValue(
     post?.caption?.text,
     post?.edge_media_to_caption?.edges?.[0]?.node?.text,
     text.match(/<div[^>]+class=["'][^"']*(?:Caption|caption)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1],
     meta.description,
   );
+  const generic = value => /^(?:Instagram|Log in|Sign up)\s*$|create an account|see photos and videos/i.test(textOnly(value));
+  const caption = generic(rawCaption) ? '' : rawCaption;
   const author = firstValue(post?.owner?.username, post?.user?.username, meta.author);
   const hasPublicContent = Boolean(caption || media.length || meta.images.length);
   return finalResult({
     title: firstValue(author && '@' + author + ' on Instagram', meta.title),
     description: caption,
     author,
-    images: unique([...media, ...meta.images]),
+    images: uniqueMedia([...media, ...meta.images]),
     strategy: post ? 'instagram-json-state' : code ? 'instagram-embed' : 'instagram-page',
-    status: /login|log in|登录/i.test(meta.title)
-      ? 'login_required'
-      : hasPublicContent ? 'ok' : 'partial',
+    status: hasPublicContent
+      ? (post ? 'ok' : 'partial')
+      : /login|log in|\u767b\u5f55|sign up/i.test(meta.title + text.slice(0, 8000)) ? 'login_required' : 'partial',
   }, target, requestUrl);
 }
-
 async function extractDouban(target, requestUrl) {
   const id = target.pathname.match(/\/subject\/(\d+)/)?.[1];
   if (id) {

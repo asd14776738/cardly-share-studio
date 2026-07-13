@@ -11,6 +11,13 @@ globalThis.fetch = async input => {
     question: { title: '知乎问题标题' },
     author: { name: '知乎作者' },
   });
+  if (url.includes('weibo.com/ajax/statuses/show') && url.includes('fallbackid')) return new Response('', { status: 403 });
+  if (url.includes('m.weibo.cn/statuses/show') && url.includes('fallbackid')) return new Response('', { status: 403 });
+  if (url.startsWith('https://weibo.com/user/fallbackid')) return html(`
+    <meta property="og:title" content="Fallback Weibo Post">
+    <meta property="og:description" content="Fallback weibo public content">
+    <meta property="og:image" content="https://wx1.sinaimg.cn/large/fallback.jpg">
+    <div>Sina Visitor System</div>`);
   if (url.includes('weibo.com/ajax/statuses/show')) return json({
     text_raw: '微博正文内容',
     user: { screen_name: '微博作者' },
@@ -26,6 +33,10 @@ globalThis.fetch = async input => {
     <meta property="og:title" content="微信备用标题">
     <script>var msg_title = '微信文章标题'.html(false); var msg_desc = '微信摘要'; var nickname = '公众号作者'; var msg_cdn_url = 'https://mmbiz.qpic.cn/cover.jpg';</script>
     <div id="js_content"><p>${'微信文章正文。'.repeat(180)}</p><img data-src="https://mmbiz.qpic.cn/body.jpg"></div><script></script>`);
+  if (url.startsWith('https://www.xiaohongshu.com/discovery/item/note-single')) return html(`
+    <meta property="og:image" content="https://sns-avatar-qc.xhscdn.com/avatar.jpg">
+    <meta property="twitter:image" content="https://sns-webpic-qc.xhscdn.com/recommend.jpg">
+    <script>window.__INITIAL_STATE__={"note":{"noteId":"note-single","title":"Single image note","desc":"Only the post image should remain","user":{"nickname":"Author"},"imageList":[{"urlDefault":"https://sns-webpic-qc.xhscdn.com/post.jpg?imageView2=2&w=1080","urlPre":"https://sns-webpic-hw.xhscdn.com/post.jpg?imageView2=2&w=360"}]}};</script>`);
   if (url.startsWith('https://www.xiaohongshu.com/discovery/item/note1') || url.startsWith('https://xhslink.com/a/note1')) return html(`
     <script>window.__INITIAL_STATE__={"note":{"noteId":"note1","title":"小红书标题","desc":"小红书正文","user":{"nickname":"小红书作者"},"imageList":[{"urlDefault":"https://sns-webpic-qc.xhscdn.com/1.jpg"},{"urlDefault":"https://sns-webpic-qc.xhscdn.com/2.jpg"}]}};</script>`);
   if (url.startsWith('https://web.okjike.com/originalPost/post1')) return html(`
@@ -52,6 +63,10 @@ globalThis.fetch = async input => {
   if (url.startsWith('https://open.spotify.com/oembed')) return json({
     title: 'Spotify Song', author_name: 'Spotify Artist', thumbnail_url: 'https://i.scdn.co/cover.jpg',
   });
+  if (url.startsWith('https://www.instagram.com/reel/CODE2/embed/captioned/')) return new Response('', { status: 403 });
+  if (url.startsWith('https://www.instagram.com/reel/CODE2/embed/')) return html('<title>Log in • Instagram</title>');
+  if (url.startsWith('https://www.instagram.com/reel/CODE2/')) return html(`
+    <script data-sjs>{"post":{"shortcode":"CODE2","caption":{"text":"Instagram fallback caption"},"owner":{"username":"fallback_author"},"display_url":"https://scontent.cdninstagram.com/fallback.jpg"}}</script>`);
   if (url.startsWith('https://www.instagram.com/reel/CODE/embed/captioned/')) return html(`
     <meta property="og:title" content="Instagram Post">
     <meta property="og:description" content="Instagram 正文">
@@ -99,6 +114,10 @@ async function extract(target) {
 }
 
 const cases = [
+  ['Weibo metadata fallback', 'https://weibo.com/user/fallbackid', { platform: 'weibo', strategy: 'weibo-login-wall', title: 'Fallback Weibo Post', images: 1, status: 'partial' }],
+  ['Xiaohongshu single body image', 'https://www.xiaohongshu.com/discovery/item/note-single', { platform: 'xiaohongshu', strategy: 'xiaohongshu-initial-state', title: 'Single image note', images: 1 }],
+  ['Instagram script fallback', 'https://www.instagram.com/reel/CODE2/', { platform: 'instagram', strategy: 'instagram-json-state', title: '@fallback_author on Instagram', author: 'fallback_author', images: 1 }],
+
   ['知乎', 'https://www.zhihu.com/question/100/answer/200', { platform: 'zhihu', strategy: 'zhihu-answer-api', title: '知乎问题标题', author: '知乎作者', images: 1 }],
   ['微博', 'https://m.weibo.cn/status/post1', { platform: 'weibo', strategy: 'weibo-public-json', title: '微博作者 的微博', author: '微博作者', images: 2 }],
   ['微信', 'https://mp.weixin.qq.com/s/abc', { platform: 'wechat', strategy: 'wechat-article-html', title: '微信文章标题', author: '公众号作者', images: 2, minutes: 4 }],

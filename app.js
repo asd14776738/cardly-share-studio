@@ -1,31 +1,23 @@
 import { estimateReadingMinutes, buildKicker } from './reading-time.js';
 
-function svgIcon(body) {
-  return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(body);
-}
-
-function brandTile(label, background, foreground = '#fff', size = 10) {
-  return svgIcon(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="${background}"/><text x="12" y="15.7" text-anchor="middle" font-family="Arial,Microsoft YaHei,sans-serif" font-size="${size}" font-weight="800" fill="${foreground}">${label}</text></svg>`);
-}
-
 const platformIcons = {
-  x: svgIcon('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#111" d="M18.9 2h3.7l-8.1 9.3L24 22h-7.4l-5.8-7.6L4.2 22H.5l8.6-9.8L0 2h7.6l5.3 6.9L18.9 2Zm-1.3 18h2L6.5 3.9H4.3L17.6 20Z"/></svg>'),
-  weibo: svgIcon('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><ellipse cx="11" cy="14" rx="9" ry="6.5" fill="#e6162d"/><ellipse cx="10" cy="14" rx="5" ry="3.4" fill="#fff"/><circle cx="9" cy="13.5" r="1.7" fill="#111"/><path d="M15 7c3-1 5 1 5 3" fill="none" stroke="#f5c400" stroke-width="2" stroke-linecap="round"/></svg>'),
-  telegram: svgIcon('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#229ed9"/><path fill="#fff" d="m5 11.5 13-5-2.3 11.2c-.2.8-.8 1-1.5.6l-3.5-2.6-1.7 1.7c-.2.2-.3.3-.7.3l.3-3.6 6.5-5.9c.3-.3-.1-.4-.4-.2l-8 5-3.4-1.1c-.7-.2-.7-.7.2-1Z"/></svg>'),
-  instagram: svgIcon('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#d62976"/><rect x="5" y="5" width="14" height="14" rx="4" fill="none" stroke="#fff" stroke-width="2"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="#fff" stroke-width="2"/><circle cx="17" cy="7" r="1.1" fill="#fff"/></svg>'),
-  zhihu: brandTile('知', '#1772f6', '#fff', 12),
-  wechat: brandTile('微', '#07c160', '#fff', 12),
-  xiaohongshu: brandTile('RED', '#ff2442', '#fff', 7),
-  jike: brandTile('J', '#ffe411', '#111', 13),
-  netease: brandTile('♪', '#e60026', '#fff', 15),
-  qqmusic: brandTile('QQ', '#31c27c', '#fff', 8),
-  douban: brandTile('豆', '#2e963d', '#fff', 12),
-  douyin: brandTile('♪', '#111', '#25f4ee', 15),
-  spotify: brandTile('≋', '#1ed760', '#111', 16),
-  apple: brandTile('♫', '#111', '#fff', 14),
-  threads: brandTile('@', '#111', '#fff', 14),
-  chatgpt: brandTile('AI', '#10a37f', '#fff', 8),
-  kimi: brandTile('K', '#111', '#fff', 13)
+  x: 'https://cdn.simpleicons.org/x/111111',
+  weibo: 'https://cdn.simpleicons.org/sinaweibo/E6162D',
+  telegram: 'https://cdn.simpleicons.org/telegram/26A5E4',
+  instagram: 'https://cdn.simpleicons.org/instagram/E4405F',
+  zhihu: 'https://cdn.simpleicons.org/zhihu/1772F6',
+  wechat: 'https://cdn.simpleicons.org/wechat/07C160',
+  xiaohongshu: 'https://cdn.simpleicons.org/xiaohongshu/FF2442',
+  jike: 'https://www.google.com/s2/favicons?domain=web.okjike.com&sz=64',
+  netease: 'https://cdn.simpleicons.org/neteasecloudmusic/E60026',
+  qqmusic: 'https://www.google.com/s2/favicons?domain=y.qq.com&sz=64',
+  douban: 'https://cdn.simpleicons.org/douban/2D963D',
+  douyin: 'https://cdn.simpleicons.org/tiktok/111111',
+  spotify: 'https://cdn.simpleicons.org/spotify/1ED760',
+  apple: 'https://cdn.simpleicons.org/applemusic/FA243C',
+  threads: 'https://cdn.simpleicons.org/threads/111111',
+  chatgpt: 'https://www.google.com/s2/favicons?domain=chatgpt.com&sz=64',
+  kimi: 'https://www.google.com/s2/favicons?domain=kimi.com&sz=64'
 };
 
 function iconForUrl(value) {
@@ -56,12 +48,14 @@ const defaults = {
   platform: 'web',
   contentStatus: 'ok',
   readingMinutes: null,
+  colorMode: 'auto',
+  sourceLabel: 'ARCHDAILY.CN',
   ratio: 'auto',
   layout: 'editorial',
   theme: 'coastal',
-  font: 'serif',
-  radius: 24,
-  padding: 36,
+  font: 'sans',
+  radius: 18,
+  padding: 32,
   url: 'https://www.archdaily.cn/cn/1012043',
   title: '在海风与山影之间，重新想象公共空间',
   description: '一座面向海岸的文化建筑，以层叠露台连接城市生活与自然景观。',
@@ -175,18 +169,155 @@ function extractUrlFromShare(value) {
   return match ? match[0].replace(/[)\]】）]+$/, '') : '';
 }
 
-function recommendedThemeForPlatform(platform) {
-  const map = { weibo: 'berry', douyin: 'midnight', x: 'ink', threads: 'mono', xiaohongshu: 'film', instagram: 'rose', telegram: 'sky', wechat: 'jade', zhihu: 'cobalt', netease_music: 'rose', qq_music: 'jade', spotify: 'moss', apple_music: 'mono', douban: 'paper' };
-  return map[platform] || 'coastal';
+const semanticPalettes = [
+  { test: /海|湖|雨|天空|蓝|旅行|岛|风景|ocean|sea|sky|travel/i, hue: 198, name: '海岸蓝' },
+  { test: /树|森林|植物|花园|自然|春|露营|green|nature|forest/i, hue: 142, name: '林间绿' },
+  { test: /食|餐|咖啡|烘焙|甜|火锅|晚餐|food|coffee|cake/i, hue: 28, name: '烟火橙' },
+  { test: /爱|浪漫|花|温柔|婚礼|rose|love|romance/i, hue: 346, name: '花影粉' },
+  { test: /科技|AI|代码|产品|数字|未来|design|tech|code/i, hue: 224, name: '数码蓝' },
+  { test: /艺术|展览|电影|摄影|音乐|书|诗|art|film|music|book/i, hue: 278, name: '艺文紫' },
+  { test: /复古|历史|建筑|城市|街道|胶片|vintage|architecture/i, hue: 38, name: '旧城金' },
+];
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
 }
 
-function setRecommendedTheme(themeName) {
-  const theme = themeConfig[themeName] || themeConfig.coastal;
-  state.recommendedTheme = themeName;
+function textHash(value) {
+  let hash = 2166136261;
+  for (const char of String(value || '')) {
+    hash ^= char.codePointAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function hsl(hue, saturation, lightness) {
+  const normalized = ((Math.round(hue) % 360) + 360) % 360;
+  return `hsl(${normalized} ${Math.round(saturation)}% ${Math.round(lightness)}%)`;
+}
+
+function rgbToHsl(red, green, blue) {
+  const r = red / 255;
+  const g = green / 255;
+  const b = blue / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const lightness = (max + min) / 2;
+  let hue = 0;
+  let saturation = 0;
+  if (max !== min) {
+    const delta = max - min;
+    saturation = lightness > .5 ? delta / (2 - max - min) : delta / (max + min);
+    if (max === r) hue = (g - b) / delta + (g < b ? 6 : 0);
+    else if (max === g) hue = (b - r) / delta + 2;
+    else hue = (r - g) / delta + 4;
+    hue *= 60;
+  }
+  return { hue, saturation: saturation * 100, lightness: lightness * 100 };
+}
+
+function paletteForContent() {
+  const text = `${state.title || ''} ${state.description || ''}`.trim();
+  const rule = semanticPalettes.find(item => item.test.test(text));
+  const hash = textHash(text || state.url || state.platform);
+  const sampled = state.imageColor;
+  const hue = sampled && sampled.saturation > 12
+    ? sampled.hue
+    : rule ? rule.hue + ((hash % 17) - 8) : hash % 360;
+  const saturation = clamp(sampled?.saturation || (rule ? 48 : 38), 30, 64);
+  const isDark = /夜|黑|深夜|宇宙|星空|霓虹|night|dark|space/i.test(text);
+  const warmShift = /温暖|阳光|夏|秋|美食|咖啡|sun|warm/i.test(text) ? 12 : 0;
+  const baseHue = hue + warmShift;
+  const stops = isDark
+    ? [
+        hsl(baseHue, saturation * .72, 15),
+        hsl(baseHue + 20, saturation * .58, 27),
+        hsl(baseHue - 28, saturation * .5, 44),
+      ]
+    : [
+        hsl(baseHue, saturation * .72, 77),
+        hsl(baseHue + 22, saturation * .48, 91),
+        hsl(baseHue - 34, saturation * .62, 84),
+      ];
+  const reason = sampled && sampled.saturation > 12
+    ? '取自正文图片与文字'
+    : rule ? `识别到“${rule.name}”语义` : '根据正文实时生成';
+  return {
+    name: rule?.name || '内容色谱',
+    stops,
+    surface: isDark ? 'rgba(15,18,23,.82)' : 'rgba(255,255,255,.86)',
+    text: isDark ? '#f7f7f4' : '#1b1d20',
+    dark: isDark,
+    reason,
+  };
+}
+
+function syncPalettePreview(palette) {
+  const paletteBars = qsa('#auto-palette i');
+  [...palette.stops, palette.text].forEach((color, index) => {
+    if (paletteBars[index]) paletteBars[index].style.background = color;
+  });
   const label = qs('#recommend-label');
-  if (label) label.textContent = `已根据内容匹配 · ${theme.name}`;
+  if (label) label.textContent = `自动开启 · ${palette.reason}`;
 }
 
+function refreshContentPalette() {
+  state.dynamicTheme = paletteForContent();
+  state.recommendedTheme = 'dynamic';
+  if (state.colorMode !== 'manual') {
+    state.colorMode = 'auto';
+    state.theme = 'dynamic';
+  }
+  syncPalettePreview(state.dynamicTheme);
+  qsa('.theme-swatch').forEach(item => item.classList.toggle('active', state.colorMode === 'manual' && item.dataset.theme === state.theme));
+  if (card) updateCard();
+}
+
+let paletteTimer = null;
+function schedulePaletteRefresh() {
+  clearTimeout(paletteTimer);
+  paletteTimer = setTimeout(refreshContentPalette, 90);
+}
+
+function sampleImagePalette(image, src) {
+  if (state.sampledImageSrc === src) return;
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 28;
+    canvas.height = 28;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    let red = 0;
+    let green = 0;
+    let blue = 0;
+    let weight = 0;
+    for (let index = 0; index < pixels.length; index += 4) {
+      if (pixels[index + 3] < 180) continue;
+      const sum = pixels[index] + pixels[index + 1] + pixels[index + 2];
+      if (sum > 735 || sum < 24) continue;
+      const max = Math.max(pixels[index], pixels[index + 1], pixels[index + 2]);
+      const min = Math.min(pixels[index], pixels[index + 1], pixels[index + 2]);
+      const chroma = Math.max(12, max - min);
+      red += pixels[index] * chroma;
+      green += pixels[index + 1] * chroma;
+      blue += pixels[index + 2] * chroma;
+      weight += chroma;
+    }
+    if (!weight) return;
+    state.sampledImageSrc = src;
+    state.imageColor = rgbToHsl(red / weight, green / weight, blue / weight);
+    refreshContentPalette();
+  } catch {
+    state.sampledImageSrc = src;
+  }
+}
+
+function setRecommendedTheme() {
+  state.colorMode = 'auto';
+  refreshContentPalette();
+}
 function titleRole(text) {
   return /(\(@[^)]+\)|\bon\s+X$|^@\w+)/i.test(String(text || '').trim()) ? 'publisher' : 'headline';
 }
@@ -217,12 +348,13 @@ function renderMediaGallery() {
   let tallCount = 0;
   images.forEach((src, index) => {
     const image = document.createElement('img');
+    image.crossOrigin = src.startsWith('data:') ? null : 'anonymous';
     image.src = src;
     image.alt = `内容图片 ${index + 1}`;
-    image.crossOrigin = src.startsWith('data:') ? null : 'anonymous';
     image.addEventListener('load', () => {
       if (image.naturalHeight / image.naturalWidth > 1.25) tallCount += 1;
       gallery.classList.toggle('is-tall', tallCount > 0);
+      if (index === 0 && state.colorMode === 'auto') sampleImagePalette(image, src);
     }, { once: true });
     gallery.appendChild(image);
   });
@@ -230,20 +362,41 @@ function renderMediaGallery() {
 
 function updateCard() {
   const density = contentDensity(state.description);
-  const role = titleRole(state.title);
+  const content = canvasContent();
+  const role = titleRole(content.title);
   const mediaState = (state.images || []).some(Boolean) ? 'has-media' : 'no-media';
-  const theme = themeConfig[state.theme] || themeConfig.coastal;
-  card.className = `share-card theme-${state.theme} ratio-${state.ratio} layout-${state.layout} source-${state.source} density-${density} title-${role} ${mediaState} font-${state.font || 'serif'}`;
+  const theme = state.theme === 'dynamic'
+    ? state.dynamicTheme || paletteForContent()
+    : themeConfig[state.theme] || themeConfig.coastal;
+  const cleanTitle = String(state.title || '').replace(/\s+/g, ' ').trim();
+  const cleanDescription = String(state.description || '').replace(/\s+/g, ' ').trim();
+  const duplicateTitle = Boolean(cleanTitle && cleanDescription && (
+    cleanTitle === cleanDescription ||
+    cleanDescription.startsWith(cleanTitle) ||
+    cleanTitle.startsWith(cleanDescription)
+  ));
+  card.className = `share-card theme-${state.theme} ratio-${state.ratio} layout-${state.layout} source-${state.source} density-${density} title-${role} ${duplicateTitle ? 'title-duplicate' : ''} ${mediaState} font-${state.font || 'sans'}`;
   card.style.setProperty('--theme-a', theme.stops[0]);
   card.style.setProperty('--theme-b', theme.stops[1]);
   card.style.setProperty('--theme-c', theme.stops[2]);
   card.style.setProperty('--theme-surface', theme.surface);
   card.style.setProperty('--theme-text', theme.text);
   card.style.setProperty('--card-radius', `${state.radius || 0}px`);
-  card.style.setProperty('--surface-pad', `${state.padding || 36}px`);
-  qs('#preview-card-title').textContent = state.title;
+  card.style.setProperty('--surface-pad', `${state.padding || 32}px`);
+  const titleNode = qs('#preview-card-title');
+  titleNode.textContent = state.title;
+  titleNode.hidden = duplicateTitle || !cleanTitle;
   qs('#preview-card-description').textContent = state.description;
-  qs('#source-name').textContent = state.author || sourceData[state.source].name;
+  const sourceLabel = state.sourceLabel || sourceData[state.source].name;
+  qs('#source-name').textContent = sourceLabel;
+  const byline = qs('#card-byline');
+  if (byline) {
+    const sameAsSource = String(state.author || '').trim().toLowerCase() === String(sourceLabel || '').trim().toLowerCase();
+    byline.hidden = !state.author || sameAsSource;
+    byline.textContent = state.platform === 'douyin'
+      ? `发布者 · ${state.author}`
+      : `作者 · ${state.author}`;
+  }
   const sourceIcon = qs('#source-icon-image');
   const sourceFallback = qs('.source-brand-fallback');
   sourceFallback.textContent = sourceData[state.source].icon;
@@ -274,17 +427,20 @@ function selectSource(source, applyPreset = true) {
     state.title = sourceData[source].title;
     state.description = sourceData[source].description;
     state.platform = source;
+    state.sourceLabel = sourceData[source].name;
     state.contentStatus = 'ok';
     state.readingMinutes = null;
     state.image = sourceData[source].image;
     state.images = [sourceData[source].image];
+    state.imageColor = null;
+    state.sampledImageSrc = '';
     state.icon = sourceData[source].iconUrl;
     state.author = sourceData[source].name;
     authorInput.value = state.author;
     titleInput.value = state.title;
     descriptionInput.value = state.description;
   }
-  updateCard();
+  refreshContentPalette();
 }
 
 qsa('.source-tab').forEach(tab => tab.addEventListener('click', () => selectSource(tab.dataset.source)));
@@ -309,6 +465,7 @@ qs('#theme-control').addEventListener('click', event => {
   const button = event.target.closest('button[data-theme]');
   if (!button) return;
   state.theme = button.dataset.theme;
+  state.colorMode = 'manual';
   qs('#recommend-label').textContent = `当前主题 · ${themeConfig[state.theme].name}`;
   qsa('.theme-swatch').forEach(item => item.classList.toggle('active', item === button));
   updateCard();
@@ -321,10 +478,8 @@ qs('#theme-toggle').addEventListener('click', () => {
 });
 
 qs('#recommend-theme').addEventListener('click', () => {
-  state.theme = state.recommendedTheme || recommendedThemeForPlatform(state.platform);
-  qsa('.theme-swatch').forEach(item => item.classList.toggle('active', item.dataset.theme === state.theme));
-  updateCard();
-  showToast(`已应用智能推荐 · ${themeConfig[state.theme].name}`);
+  setRecommendedTheme();
+  showToast('实时配色已开启，会跟随正文与配图更新');
 });
 
 qs('#font-control').addEventListener('change', event => { state.font = event.target.value; updateCard(); });
@@ -340,17 +495,23 @@ function setZoom(next) {
 qs('#zoom-out').addEventListener('click', () => setZoom(zoomLevel - 5));
 qs('#zoom-in').addEventListener('click', () => setZoom(zoomLevel + 5));
 
-setRecommendedTheme('coastal');
+refreshContentPalette();
 setZoom(85);
 
-titleInput.addEventListener('input', () => { state.title = titleInput.value || '输入你的标题'; updateCard(); });
-authorInput.addEventListener('input', () => { state.author = authorInput.value || sourceData[state.source].name; updateCard(); });
+titleInput.addEventListener('input', () => {
+  state.title = titleInput.value || '输入你的标题';
+  schedulePaletteRefresh();
+});
+authorInput.addEventListener('input', () => {
+  state.author = authorInput.value || sourceData[state.source].name;
+  updateCard();
+});
 
 descriptionInput.addEventListener('input', () => {
   state.description = descriptionInput.value.slice(0, 2000);
   state.readingMinutes = null;
   if (descriptionInput.value !== state.description) descriptionInput.value = state.description;
-  updateCard();
+  schedulePaletteRefresh();
 });
 
 qs('#image-upload').addEventListener('change', async event => {
@@ -364,7 +525,9 @@ qs('#image-upload').addEventListener('change', async event => {
     reader.readAsDataURL(file);
   })));
   state.image = state.images[0];
-  updateCard();
+  state.imageColor = null;
+  state.sampledImageSrc = '';
+  refreshContentPalette();
   showToast(`已载入 ${state.images.length} 张图片，版式已自动调整`);
 });
 
@@ -388,11 +551,14 @@ qs('#generate-button').addEventListener('click', async () => {
   state.icon = iconForUrl(value);
   state.image = '';
   state.images = [];
+  state.imageColor = null;
+  state.sampledImageSrc = '';
   const host = new URL(value).hostname.replace(/^www\./, '').toUpperCase();
   sourceData[state.source].name = host;
   state.title = host;
   state.description = '';
   state.author = host;
+  state.sourceLabel = host;
   authorInput.value = state.author;
   titleInput.value = state.title;
   descriptionInput.value = '';
@@ -412,7 +578,8 @@ qs('#generate-button').addEventListener('click', async () => {
     }
     state.author = metadata?.author || metadata?.platformLabel || host;
     authorInput.value = state.author;
-    setRecommendedTheme(recommendedThemeForPlatform(state.platform));
+    const sourceLabels = { douyin: '抖音视频', weibo: '微博', xiaohongshu: '小红书', instagram: 'Instagram', x: 'X' };
+    state.sourceLabel = sourceLabels[state.platform] || metadata?.platformLabel || host;
     state.contentStatus = metadata?.status || 'ok';
     state.readingMinutes = Number.isFinite(metadata?.readingMinutes) ? metadata.readingMinutes : estimateReadingMinutes(metadata?.description);
     const accessMessage = metadata?.status === 'login_required'
@@ -431,6 +598,8 @@ qs('#generate-button').addEventListener('click', async () => {
     if (extractedImages.length) {
       state.images = [...new Set(extractedImages)].slice(0, 6);
       state.image = state.images[0];
+      state.imageColor = null;
+      state.sampledImageSrc = '';
     }
     if (metadata?.platformLabel) sourceData[state.source].name = metadata.platformLabel.toUpperCase();
     const extractStatus = qs('#extract-status');
@@ -453,7 +622,7 @@ qs('#generate-button').addEventListener('click', async () => {
   } catch {
     showToast('暂时无法提取该链接，请重试或上传截图');
   } finally {
-    updateCard();
+    refreshContentPalette();
     button.classList.remove('loading');
     button.innerHTML = '<span>生成卡片</span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12m-4-4 4 4-4 4"/></svg>';
   }
@@ -538,6 +707,30 @@ function drawCanvasLines(ctx, lines, x, y, lineHeight) {
   return y + lines.length * lineHeight;
 }
 
+function currentTheme() {
+  return state.theme === 'dynamic'
+    ? (state.dynamicTheme || paletteForContent())
+    : (themeConfig[state.theme] || themeConfig.coastal);
+}
+
+function canvasContent() {
+  const title = String(state.title || '').replace(/\s+/g, ' ').trim();
+  const description = String(state.description || '').replace(/\s+/g, ' ').trim();
+  const duplicateTitle = Boolean(title && description && (
+    title === description || description.startsWith(title) || title.startsWith(description)
+  ));
+  const source = state.sourceLabel || sourceData[state.source].name;
+  const sameAsSource = String(state.author || '').trim().toLowerCase() === String(source).trim().toLowerCase();
+  return {
+    title: duplicateTitle ? '' : title,
+    description,
+    source,
+    byline: state.author && !sameAsSource
+      ? (state.platform === 'douyin' ? '发布者' : '作者') + ' · ' + state.author
+      : '',
+  };
+}
+
 async function downloadAutoCard() {
   const width = 1080;
   const outer = 38;
@@ -548,24 +741,27 @@ async function downloadAutoCard() {
   const bodyFont = density === 'short' ? 48 : density === 'medium' ? 38 : 31;
   const bodyLine = density === 'short' ? 70 : density === 'medium' ? 60 : 52;
   const measure = document.createElement('canvas').getContext('2d');
-  const role = titleRole(state.title);
+  const content = canvasContent();
+  const role = titleRole(content.title);
   const titleFont = role === 'headline' ? 38 : 26;
   const titleLine = role === 'headline' ? 54 : 38;
   measure.font = `600 ${titleFont}px "Microsoft YaHei", sans-serif`;
-  const titleLines = canvasLines(measure, state.title, contentW, role === 'headline' ? 3 : 2);
+  const titleLines = canvasLines(measure, content.title, contentW, role === 'headline' ? 3 : 2);
   measure.font = `500 ${bodyFont}px "Microsoft YaHei", sans-serif`;
-  const bodyLines = canvasLines(measure, state.description, contentW);
+  const bodyLines = canvasLines(measure, content.description, contentW);
   const loadedImages = (await Promise.all((state.images || []).slice(0, 6).map(src => loadImage(src).catch(() => null)))).filter(Boolean);
   const imageHeights = loadedImages.map(image => Math.min(640, Math.max(260, Math.round(contentW * image.height / image.width))));
   const mediaHeight = imageHeights.reduce((sum, value) => sum + value, 0) + Math.max(0, imageHeights.length - 1) * 18;
-  const contentHeight = 86 + 36 + titleLines.length * titleLine + 24 + bodyLines.length * bodyLine + (mediaHeight ? 38 + mediaHeight : 0) + 110;
+  const titleGap = titleLines.length ? 24 : 0;
+  const bylineHeight = content.byline ? 50 : 0;
+  const contentHeight = 86 + 36 + titleLines.length * titleLine + titleGap + bodyLines.length * bodyLine + bylineHeight + (mediaHeight ? 38 + mediaHeight : 0) + 110;
   const minimumHeight = loadedImages.length ? 1180 : 820;
   const height = Math.min(7600, Math.max(minimumHeight, outer * 2 + surfacePad * 2 + contentHeight));
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
-  const theme = themeConfig[state.theme] || themeConfig.coastal;
+  const theme = currentTheme();
   const stops = theme.stops;
   const gradient = ctx.createLinearGradient(0, 0, width, height);
   gradient.addColorStop(0, stops[0]);
@@ -594,7 +790,7 @@ async function downloadAutoCard() {
     ctx.restore();
   }
   ctx.font = '700 22px "Microsoft YaHei", sans-serif';
-  ctx.fillText(state.author || sourceData[state.source].name, contentX + 62, y + 9);
+  ctx.fillText(content.source, contentX + 62, y + 9);
   ctx.globalAlpha = .48;
   ctx.textAlign = 'right';
   ctx.font = '600 18px Arial, sans-serif';
@@ -614,6 +810,14 @@ async function downloadAutoCard() {
   y += 24;
   ctx.font = `500 ${bodyFont}px "Microsoft YaHei", sans-serif`;
   y = drawCanvasLines(ctx, bodyLines, contentX, y, bodyLine);
+  if (content.byline) {
+    y += 18;
+    ctx.globalAlpha = .52;
+    ctx.font = '600 18px "Microsoft YaHei", sans-serif';
+    ctx.fillText(content.byline, contentX, y);
+    ctx.globalAlpha = 1;
+    y += 32;
+  }
   if (loadedImages.length) y += 38;
   for (let index = 0; index < loadedImages.length; index += 1) {
     const image = loadedImages[index];
@@ -664,7 +868,8 @@ async function downloadCard() {
   if (state.ratio === 'auto') return downloadAutoCard();
   const sizes = { square: [1080,1080], wide: [1600,900], portrait: [1080,1350] };
   const [width, height] = sizes[state.ratio];
-  const theme = themeConfig[state.theme] || themeConfig.coastal;
+  const theme = currentTheme();
+  const content = canvasContent();
   const light = !theme.dark;
   const canvas = document.createElement('canvas');
   canvas.width = width; canvas.height = height;
@@ -679,7 +884,7 @@ async function downloadCard() {
   ctx.fillStyle = light ? '#111216' : '#ffffff';
   ctx.textBaseline = 'top';
   ctx.font = `600 ${Math.round(width*.017)}px Arial, sans-serif`;
-  ctx.fillText(state.author || sourceData[state.source].name, pad, pad);
+  ctx.fillText(content.source, pad, pad);
   ctx.globalAlpha = .72;
   ctx.textAlign = 'right'; ctx.fillText('CARD / 01', width-pad, pad); ctx.textAlign = 'left'; ctx.globalAlpha = 1;
   let image;
@@ -700,10 +905,18 @@ async function downloadCard() {
   ctx.globalAlpha=.7; ctx.font = `600 ${Math.round(width*(isWide?.009:.011))}px Arial, sans-serif`; ctx.fillText(liveKicker(), textX, textY); ctx.globalAlpha=1;
   ctx.globalAlpha=.68;
   ctx.font = `600 ${Math.round(width*(isWide?.012:.018))}px "Microsoft YaHei", sans-serif`;
-  const afterPublisher = wrapText(ctx,state.title,textX,textY+pad*.45,textW,Math.round(width*(isWide?.017:.026)),2);
+  const afterPublisher = content.title
+    ? wrapText(ctx,content.title,textX,textY+pad*.45,textW,Math.round(width*(isWide?.017:.026)),2)
+    : textY + pad * .34;
   ctx.globalAlpha=1;
   ctx.font=`560 ${Math.round(width*(isWide?.024:.04))}px "Microsoft YaHei", sans-serif`;
-  wrapText(ctx,state.description,textX,afterPublisher+pad*.22,textW,Math.round(width*(isWide?.032:.052)),isWide?4:3);
+  const afterBody = wrapText(ctx,content.description,textX,afterPublisher+pad*.22,textW,Math.round(width*(isWide?.032:.052)),isWide?4:3);
+  if (content.byline) {
+    ctx.globalAlpha = .58;
+    ctx.font = '600 ' + Math.round(width*(isWide?.01:.014)) + 'px "Microsoft YaHei", sans-serif';
+    ctx.fillText(content.byline, textX, afterBody + pad * .18);
+    ctx.globalAlpha = 1;
+  }
   ctx.strokeStyle=light?'#111216':'#fff'; ctx.globalAlpha=.6; ctx.beginPath(); ctx.moveTo(pad,height-pad*.85); ctx.lineTo(width-pad,height-pad*.85); ctx.stroke();
   ctx.font=`500 ${Math.round(width*.012)}px Arial, sans-serif`; ctx.fillText('CARDLY · SHARE BEAUTIFULLY',pad,height-pad*.55); ctx.textAlign='right'; ctx.fillText('↗',width-pad,height-pad*.62); ctx.globalAlpha=1;
   canvas.toBlob(blob => {
