@@ -52,6 +52,11 @@ function textOnly(value) {
     .replace(/[ \t]+/g, ' ').replace(/\n\s+/g, '\n').trim();
 }
 
+function multilineText(value) {
+  return decode(String(value || '').replace(/<br\s*\/?\s*>/gi, '\n').replace(/<[^>]+>/g, ' '))
+    .replace(/[ \t]+/g, ' ').replace(/[ \t]*\n[ \t]*/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
 function readingStats(value) {
   const text = textOnly(value);
   const hanCharacters = (text.match(/[\u3400-\u9fff]/g) || []).length;
@@ -650,15 +655,22 @@ async function extractTelegram(target, requestUrl) {
     embed.searchParams.set('mode', 'tme');
     const { text } = await fetchText(embed);
     const body = text.match(/<div[^>]+class=["'][^"']*tgme_widget_message_text[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1] || '';
-    const author = textOnly(text.match(/<a[^>]+class=["'][^"']*tgme_widget_message_author_name[^"']*["'][^>]*>([\s\S]*?)<\/a>/i)?.[1] || '');
+    const messageText = multilineText(body);
+    const sections = messageText.split(/\n{2,}/).map(value => value.trim()).filter(Boolean);
+    const hasHeadline = sections.length > 1 && sections[0].length <= 80;
+    const authorMatch = text.match(/<a[^>]+class=["'][^"']*tgme_widget_message_owner_name[^"']*["'][^>]*>([\s\S]*?)<\/a>/i) ||
+      text.match(/<a[^>]+class=["'][^"']*tgme_widget_message_author_name[^"']*["'][^>]*>([\s\S]*?)<\/a>/i);
+    const author = textOnly(authorMatch?.[1] || '');
     const views = textOnly(text.match(/<span[^>]+class=["'][^"']*tgme_widget_message_views[^"']*["'][^>]*>([\s\S]*?)<\/span>/i)?.[1] || '');
-    const photos = [...text.matchAll(/background-image\s*:\s*url\(['"]?([^'")]+)['"]?\)/gi)].map(match => match[1]);
+    const mediaTags = text.match(/<[^>]+class=["'][^"']*(?:tgme_widget_message_photo_wrap|tgme_widget_message_video_thumb|link_preview_image)[^"']*["'][^>]*>/gi) || [];
+    const photos = mediaTags.flatMap(tag => [...tag.matchAll(/background-image\s*:\s*url\(['"]?([^'")]+)['"]?\)/gi)].map(match => match[1]));
+    const posters = [...text.matchAll(/<video\b[^>]+poster=["']([^"']+)["'][^>]*>/gi)].map(match => match[1]);
     const meta = parseMeta(text, embed);
     return finalResult({
-      title: author ? author + ' · Telegram' : meta.title,
-      description: firstValue(body, meta.description),
+      title: hasHeadline ? sections[0] : (/Telegram Widget/i.test(meta.title) ? '' : meta.title),
+      description: firstValue(hasHeadline ? sections.slice(1).join('\n\n') : messageText, meta.description),
       author,
-      images: unique([...photos, ...meta.images]),
+      images: uniqueMedia([...photos, ...posters]),
       viewCount: views,
       strategy: 'telegram-embed',
     }, target, requestUrl);

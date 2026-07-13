@@ -49,9 +49,25 @@ globalThis.fetch = async input => {
     data: [{ songname: 'QQ歌曲', singer: [{ name: '歌手乙' }], albumname: '专辑乙', albummid: 'ALBUMMID' }],
   });
   if (url.startsWith('https://t.me/channel/123?')) return html(`
-    <a class="tgme_widget_message_author_name"><span>频道作者</span></a>
-    <div class="tgme_widget_message_text">Telegram 正文</div>
-    <a style="background-image:url('https://cdn.telegram.org/photo.jpg')"></a>`);
+    <a class="tgme_widget_message_owner_name"><span>频道作者</span></a>
+    <div class="tgme_widget_message_text">Telegram 标题<br><br>Telegram 正文</div>
+    <div class="tgme_widget_message_reactions"><i class="emoji" style="background-image:url('//telegram.org/emoji/thumb.png')"></i></div>
+    <a class="tgme_widget_message_photo_wrap" style="background-image:url('https://cdn.telegram.org/photo.jpg')"></a>`);
+  if (url.startsWith('https://t.me/xhqcankao/30761?')) return html(`
+    <meta property="og:title" content="Telegram Widget">
+    <a class="tgme_widget_message_owner_name"><span>风向旗参考快讯</span></a>
+    <div class="tgme_widget_message_text">长鑫上市将批量造富 员工每人可分超百万<br><br>备受投资者关注的存储巨头长鑫科技，将进行新股网下申购和网上申购。<br><br>—— 中新经纬</div>
+    <div class="tgme_widget_message_reactions">
+      <i class="emoji" style="background-image:url('//telegram.org/emoji/thumb.png')"></i>
+      <i class="emoji" style="background-image:url('//telegram.org/emoji/clown.png')"></i>
+      <i class="emoji" style="background-image:url('//telegram.org/emoji/fire.png')"></i>
+      <i class="emoji" style="background-image:url('//telegram.org/emoji/heart.png')"></i>
+      <i class="emoji" style="background-image:url('//telegram.org/emoji/poop.png')"></i>
+      <i class="emoji" style="background-image:url('//telegram.org/emoji/banana.png')"></i>
+      <i class="emoji" style="background-image:url('//telegram.org/emoji/finger.png')"></i>
+      <i class="emoji" style="background-image:url('//telegram.org/emoji/cry.png')"></i>
+    </div>
+    <span class="tgme_widget_message_views">3.1K</span>`);
   if (url.startsWith('https://music.apple.com/')) return html(`
     <meta property="og:title" content="Apple Music Song">
     <meta property="og:description" content="Artist · Album">
@@ -155,7 +171,8 @@ const cases = [
   ['即刻', 'https://web.okjike.com/originalPost/post1', { platform: 'jike', strategy: 'jike-ssr-state', author: '即刻作者', images: 1 }],
   ['网易云音乐', 'https://y.music.163.com/m/song?id=347230', { platform: 'netease_music', strategy: 'netease-song-api', title: '网易云歌曲', author: '歌手甲', images: 1 }],
   ['QQ音乐', 'https://y.qq.com/n/ryqq/songDetail/SONGMID', { platform: 'qq_music', strategy: 'qqmusic-song-api', title: 'QQ歌曲', author: '歌手乙', images: 1 }],
-  ['Telegram', 'https://t.me/s/channel/123', { platform: 'telegram', strategy: 'telegram-embed', author: '频道作者', images: 1 }],
+  ['Telegram', 'https://t.me/s/channel/123', { platform: 'telegram', strategy: 'telegram-embed', title: 'Telegram 标题', author: '频道作者', images: 1 }],
+  ['Telegram 反应表情不是配图', 'https://t.me/xhqcankao/30761', { platform: 'telegram', strategy: 'telegram-embed', title: '长鑫上市将批量造富 员工每人可分超百万', author: '风向旗参考快讯', descriptionIncludes: '备受投资者关注', images: 0, metricType: 'views', metricCount: 3100 }],
   ['Apple Music', 'https://music.apple.com/cn/album/test/123', { platform: 'apple_music', strategy: 'applemusic-structured-metadata', title: 'Apple Music Song', images: 1 }],
   ['X', 'https://x.com/xauthor/status/2075492877380063586', { platform: 'x', strategy: 'x-syndication', title: 'X作者 (@xauthor) on X', author: '@xauthor', images: 2, metricType: 'likes', metricCount: 12700 }],
   ['Spotify', 'https://open.spotify.com/track/trackid', { platform: 'spotify', strategy: 'spotify-oembed', title: 'Spotify Song', author: 'Spotify Artist', images: 1 }],
@@ -182,6 +199,7 @@ for (const [name, url, expected] of cases) {
   if (expected.title) assert.equal(result.title, expected.title, name + ' title');
   if (expected.titleEmpty) assert.equal(result.title, '', name + ' empty title');
   if (expected.author) assert.equal(result.author, expected.author, name + ' author');
+  if (expected.descriptionIncludes) assert.ok(result.description.includes(expected.descriptionIncludes), name + ' description');
   if (expected.status) assert.equal(result.status, expected.status, name + ' status');
   assert.equal(result.imageCount, expected.images, name + ' image count');
   if (expected.imageIncludes) assert.ok(result.image.includes(expected.imageIncludes), name + ' preferred image');
