@@ -89,6 +89,27 @@ function uniqueMedia(values) {
   });
 }
 
+function logicalImageValues(value) {
+  const list = Array.isArray(value) ? value : value ? [value] : [];
+  return list.map(item => {
+    if (typeof item === 'string') return item;
+    if (!item || typeof item !== 'object') return '';
+    const nested = item.infoList || item.urlList || item.url_list || item.urls || [];
+    const entries = Array.isArray(nested) ? nested : [];
+    const preferredNested = entries.find(entry => {
+      const scene = String(entry?.imageScene || entry?.image_scene || entry?.scene || '');
+      return /(?:WB_DFT|CRD_WM_JPG|DEFAULT|ORIGIN)/i.test(scene) && entry?.url;
+    });
+    const firstNested = entries.find(entry => typeof entry === 'string' || entry?.url);
+    return firstValue(
+      item.urlDefault, item.originUrl, item.original, item.url, item.src, item.picUrl,
+      preferredNested?.url,
+      typeof firstNested === 'string' ? firstNested : firstNested?.url,
+      item.urlPre, item.thumbnailUrl,
+    );
+  }).filter(Boolean);
+}
+
 function firstValue(...values) {
   return values.find(value => value !== undefined && value !== null && value !== '') || '';
 }
@@ -524,10 +545,10 @@ async function extractXiaohongshu(target, requestUrl) {
     return score;
   });
   const isNote = Boolean(note && (note.noteId || note.note_id || typeof note.desc === 'string' || Array.isArray(note.imageList)));
-  const noteMedia = uniqueMedia([
-    ...imageValues(note?.imageList),
-    ...imageValues(note?.images),
-  ]);
+  const noteImageSource = Array.isArray(note?.imageList) && note.imageList.length
+    ? note.imageList
+    : note?.images;
+  const noteMedia = uniqueMedia(logicalImageValues(noteImageSource));
   const media = noteMedia.length
     ? noteMedia
     : uniqueMedia([...imageValues(note?.cover), ...meta.images]);

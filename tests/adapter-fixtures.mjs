@@ -37,7 +37,7 @@ globalThis.fetch = async input => {
   if (url.startsWith('https://www.xiaohongshu.com/discovery/item/note-single')) return html(`
     <meta property="og:image" content="https://sns-avatar-qc.xhscdn.com/avatar.jpg">
     <meta property="twitter:image" content="https://sns-webpic-qc.xhscdn.com/recommend.jpg">
-    <script>window.__INITIAL_STATE__={"note":{"noteId":"note-single","title":"Single image note","desc":"Only the post image should remain","user":{"nickname":"Author"},"imageList":[{"urlDefault":"https://sns-webpic-qc.xhscdn.com/post.jpg?imageView2=2&w=1080","urlPre":"https://sns-webpic-hw.xhscdn.com/post.jpg?imageView2=2&w=360"}]}};</script>`);
+    <script>window.__INITIAL_STATE__={"note":{"noteId":"note-single","title":"Single image note","desc":"Only the post image should remain","user":{"nickname":"Author"},"imageList":[{"urlDefault":"https://sns-webpic-qc.xhscdn.com/post-default.jpg?imageView2=2&w=1080","urlPre":"https://sns-webpic-hw.xhscdn.com/post-preview.jpg?imageView2=2&w=360","infoList":[{"imageScene":"WB_DFT","url":"https://sns-webpic-qc.xhscdn.com/post-scene-default.jpg"},{"imageScene":"WB_PRV","url":"https://sns-webpic-hw.xhscdn.com/post-scene-preview.jpg"}]}],"images":[{"url":"https://sns-webpic-qc.xhscdn.com/post-legacy-copy.jpg"}]}};</script>`);
   if (url.startsWith('https://www.xiaohongshu.com/discovery/item/note1') || url.startsWith('https://xhslink.com/a/note1')) return html(`
     <script>window.__INITIAL_STATE__={"note":{"noteId":"note1","title":"小红书标题","desc":"小红书正文","user":{"nickname":"小红书作者"},"interactInfo":{"likedCount":"2.6\u4e07"},"imageList":[{"urlDefault":"https://sns-webpic-qc.xhscdn.com/1.jpg"},{"urlDefault":"https://sns-webpic-qc.xhscdn.com/2.jpg"}]}};</script>`);
   if (url.startsWith('https://web.okjike.com/originalPost/post1')) return html(`
@@ -145,7 +145,7 @@ async function extract(target) {
 
 const cases = [
   ['Weibo metadata fallback', 'https://weibo.com/user/fallbackid', { platform: 'weibo', strategy: 'weibo-login-wall', title: 'Fallback Weibo Post', images: 1, status: 'partial' }],
-  ['Xiaohongshu single body image', 'https://www.xiaohongshu.com/discovery/item/note-single', { platform: 'xiaohongshu', strategy: 'xiaohongshu-initial-state', title: 'Single image note', images: 1 }],
+  ['Xiaohongshu single body image', 'https://www.xiaohongshu.com/discovery/item/note-single', { platform: 'xiaohongshu', strategy: 'xiaohongshu-initial-state', title: 'Single image note', images: 1, imageIncludes: 'post-default.jpg' }],
   ['Instagram script fallback', 'https://www.instagram.com/reel/CODE2/', { platform: 'instagram', strategy: 'instagram-json-state', title: '@fallback_author on Instagram', author: 'fallback_author', images: 1, metricType: 'views', metricCount: 45678 }],
 
   ['知乎', 'https://www.zhihu.com/question/100/answer/200', { platform: 'zhihu', strategy: 'zhihu-answer-api', title: '知乎问题标题', author: '知乎作者', images: 1 }],
