@@ -13,6 +13,7 @@ export function chooseMediaLayout(items = []) {
   let type = 'single';
   let columns = 1;
   let heroIndex = -1;
+  let wideIndices = [];
 
   if (count === 2) {
     type = 'pair';
@@ -32,6 +33,14 @@ export function chooseMediaLayout(items = []) {
     type = 'featured';
     columns = 2;
     heroIndex = widestIndex;
+  } else if (count >= 7 && count % 3 === 1) {
+    type = 'featured';
+    columns = 3;
+    heroIndex = widestIndex;
+  } else if (count >= 8 && count % 3 === 2) {
+    type = 'balanced';
+    columns = 6;
+    wideIndices = [count - 2, count - 1];
   } else if (count >= 6) {
     type = 'grid-3';
     columns = 3;
@@ -41,7 +50,7 @@ export function chooseMediaLayout(items = []) {
     ? items.map((_, index) => index).filter(index => index !== heroIndex).concat(heroIndex)
     : items.map((_, index) => index);
 
-  return { type, columns, heroIndex, portrait, orderedIndices };
+  return { type, columns, heroIndex, wideIndices, portrait, orderedIndices };
 }
 
 export function buildAutoMediaLayout(items = [], width, gap = 18) {
@@ -83,6 +92,37 @@ export function buildAutoMediaLayout(items = [], width, gap = 18) {
       fit: 'cover',
     });
     return { ...plan, cells, height: Math.round(heroY + heroHeight) };
+  }
+
+  if (plan.type === 'balanced') {
+    const standardCount = items.length - 2;
+    const cellWidth = (width - gap * 2) / 3;
+    for (let position = 0; position < standardCount; position += 1) {
+      const row = Math.floor(position / 3);
+      const column = position % 3;
+      cells.push({
+        index: position,
+        x: Math.round(column * (cellWidth + gap)),
+        y: Math.round(row * (cellWidth + gap)),
+        width: Math.round(cellWidth),
+        height: Math.round(cellWidth),
+        fit: 'cover',
+      });
+    }
+    const rows = Math.ceil(standardCount / 3);
+    const lastY = rows * cellWidth + rows * gap;
+    const wideWidth = (width - gap) / 2;
+    plan.wideIndices.forEach((index, position) => {
+      cells.push({
+        index,
+        x: Math.round(position * (wideWidth + gap)),
+        y: Math.round(lastY),
+        width: Math.round(wideWidth),
+        height: Math.round(cellWidth),
+        fit: 'cover',
+      });
+    });
+    return { ...plan, cells, height: Math.round(lastY + cellWidth) };
   }
 
   const cellWidth = (width - gap * (plan.columns - 1)) / plan.columns;

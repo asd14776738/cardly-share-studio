@@ -96,6 +96,11 @@ globalThis.fetch = async input => {
     <meta property="og:image" content="https://scontent.cdninstagram.com/cropped.jpg">
     <img class="EmbeddedMediaImage" src="https://scontent.cdninstagram.com/full.jpg">
     <div class="Caption"><a data-log-event="captionProfileClick">rocketstur</a><br><br>Bu gece Alperen &#x15e;eng&#xfc;n f&#x131;rt&#x131;nas&#x131; Sinan Erdem Spor Salonu&#x2019;nda esecek!<br><br>Ba&#x15f;ar&#x131;lar Milli Tak&#x131;m &#x1f1f9;&#x1f1f7;<div class="CaptionComments">View all 37 comments</div></div>`);
+  if (url.startsWith('https://www.instagram.com/p/Dagb2rMjVNZ/embed/captioned/')) return html(`
+    <div class="Caption"><a data-log-event="captionProfileClick">celtics</a> Welcome to the Celtics, @ygtreece</div>
+    <img class="EmbeddedMediaImage" src="https://scontent-sjc6-1.cdninstagram.com/v/t51.82787-15/734862615_18604458271006729_2745029679217501525_n.jpg?_nc_cat=100&amp;ccb=1-7&amp;oh=signed-captioned">`);
+  if (url.startsWith('https://www.instagram.com/p/Dagb2rMjVNZ/embed/')) return html(`
+    <img class="EmbeddedMediaImage" src="https://scontent-sjc6-1.cdninstagram.com/v/t51.82787-15/734862615_18604458271006729_2745029679217501525_n.jpg?_nc_cat=100&amp;ccb=1-7&amp;oh=signed-plain">`);
   if (url.startsWith('https://www.instagram.com/reel/CODE2/embed/captioned/')) return new Response('', { status: 403 });
   if (url.startsWith('https://www.instagram.com/reel/CODE2/embed/')) return html('<title>Log in • Instagram</title>');
   if (url.startsWith('https://www.instagram.com/reel/CODE2/')) return html(`
@@ -180,6 +185,7 @@ const cases = [
   ['Weibo metadata fallback', 'https://weibo.com/user/fallbackid', { platform: 'weibo', strategy: 'weibo-login-wall', title: 'Fallback Weibo Post', images: 1, status: 'partial' }],
   ['Xiaohongshu single body image', 'https://www.xiaohongshu.com/discovery/item/note-single', { platform: 'xiaohongshu', strategy: 'xiaohongshu-initial-state', title: 'Single image note', images: 1, imageIncludes: 'post-default.jpg' }],
   ['Instagram script fallback', 'https://www.instagram.com/reel/CODE2/', { platform: 'instagram', strategy: 'instagram-json-state', title: '@fallback_author on Instagram', author: 'fallback_author', images: 1, metricType: 'views', metricCount: 45678 }],
+  ['Instagram signed URL dedupe', 'https://www.instagram.com/p/Dagb2rMjVNZ/', { platform: 'instagram', strategy: 'instagram-embed', title: '@celtics on Instagram', author: 'celtics', images: 1, imageIncludes: '734862615_' }],
   ['Instagram 轮播容器不重复首图', 'https://www.instagram.com/p/DUPLICATE/', { platform: 'instagram', strategy: 'instagram-json-state', title: '@bucks on Instagram', author: 'bucks', images: 2, imageIncludes: 'ware.jpg' }],
   ['Instagram 十六进制实体解码', 'https://www.instagram.com/p/DacpRzeMiMA/', { platform: 'instagram', strategy: 'instagram-embed', title: '@rocketstur on Instagram', author: 'rocketstur', descriptionIncludes: 'Şengün fırtınası', descriptionExcludes: ['&#x', 'View all 37 comments'], images: 1, imageIncludes: 'full.jpg' }],
   ['即刻公开帖子接口', 'https://web.okjike.com/u/A7FF9DED-2FC3-4AC1-A392-92A697DF718B/post/6a54a28d54aae0885e7b2e35', { platform: 'jike', strategy: 'jike-public-api', title: '今日小确幸', author: '漆蝶', descriptionIncludes: '随机赚了笔', images: 1, imageIncludes: 'FiyLAFULL.jpg', metricType: 'likes', metricCount: 50 }],

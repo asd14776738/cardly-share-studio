@@ -353,6 +353,7 @@ function applyMediaGalleryLayout(gallery) {
   const orderByIndex = new Map(layout.orderedIndices.map((index, order) => [index, order + 1]));
   images.forEach((image, index) => {
     image.classList.toggle('media-hero', index === layout.heroIndex);
+    image.classList.toggle('media-wide', layout.wideIndices.includes(index));
     image.style.order = orderByIndex.get(index);
   });
 }

@@ -523,6 +523,17 @@ body.studio-app button { cursor: pointer; }
 .preview-stage .share-card.ratio-auto .gallery-layout-grid-3 {
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
 }
+.preview-stage .share-card.ratio-auto .gallery-layout-balanced {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+}
+.preview-stage .share-card.ratio-auto .gallery-layout-balanced img {
+  grid-column: span 2;
+  aspect-ratio: 1 !important;
+}
+.preview-stage .share-card.ratio-auto .gallery-layout-balanced .media-wide {
+  grid-column: span 3;
+  aspect-ratio: 3 / 2 !important;
+}
 .preview-stage .share-card.ratio-auto .gallery-layout-pair img,
 .preview-stage .share-card.ratio-auto .gallery-layout-grid-2 img,
 .preview-stage .share-card.ratio-auto .gallery-layout-grid-3 img {

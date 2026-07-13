@@ -1,52 +1,56 @@
-# Cardly Regression Design QA
+# Cardly v28 Design QA
 
-- User-reported broken screenshot: C:\Users\admin\AppData\Local\Temp\codex-clipboard-c3ae2ce7-7965-4183-85a2-208f27c6afff.png
-- Fixed desktop preview: C:\Users\admin\Documents\Codex\2026-07-11\cardly-sites-project-appgprj-6a51f0bacb208191b5e12b3987c0bf6e\work\qa\user-content-final.png
-- Fixed mobile preview: C:\Users\admin\Documents\Codex\2026-07-11\cardly-sites-project-appgprj-6a51f0bacb208191b5e12b3987c0bf6e\work\qa\user-content-fixed-mobile.png
-- Fixed PNG export: C:\Users\admin\Documents\Codex\2026-07-11\cardly-sites-project-appgprj-6a51f0bacb208191b5e12b3987c0bf6e\work\qa\user-content-final-export.png
-- Combined comparison: C:\Users\admin\Documents\Codex\2026-07-11\cardly-sites-project-appgprj-6a51f0bacb208191b5e12b3987c0bf6e\work\qa\user-regression-final.jpg
-- State: X source, no image, title “来 (@ooobsess) on X”, exact body copy from the user screenshot
-- Viewports: 1440 × 1000 desktop and 390 × 844 mobile
+- Source visual truth: `../audit-v28/reference-7-image-layout.png`
+- Rendered implementation: `../audit-v28/browser-7-card.png`
+- Focused implementation crop: `../audit-v28/browser-gallery.png`
+- Full-view comparison: `../audit-v28/comparison.png`
+- Focused comparison: `../audit-v28/gallery-comparison.jpg`
+- Desktop viewport: 1440 x 1100
+- Mobile viewport: 390 x 844
+- State: automatic ratio, seven-image social post, editorial card layout
+- Browser: isolated Chrome CDP fallback because the in-app browser tool was unavailable
 
-## Root cause
+**Findings**
 
-Production served version 7 HTML while the browser reused an older one-hour-cached stylesheet and script. The incompatible resource mix removed the inset card surface, applied the former oversized title rules, left the new QR image at intrinsic size, and retained a forced minimum card height.
+- No remaining P0, P1, or P2 mismatch in the scoped media-gallery composition.
+- The reference uses six equal square thumbnails in a 3 x 2 grid followed by one full-width 3:1 hero. Cardly now uses the same composition.
+- Desktop geometry: six 131 x 131 thumbnails, 8 px gaps, and one 410 x 137 hero.
+- Mobile geometry: six 84 x 84 thumbnails, 8 px gaps, and one 268 x 89 hero.
+- No horizontal overflow was found at either viewport.
 
-## Fixes
+**Required Fidelity Surfaces**
 
-- Added explicit version query strings to CSS and JavaScript.
-- Changed all site assets to no-cache/no-store/must-revalidate.
-- Removed the 620 px minimum height for automatic text-only cards.
-- Clear preset images before extracting a real link so image-less posts do not show unrelated stock imagery.
-- Use the real link hostname for every source label, producing X.COM for the reported case.
-- Kept publisher identity at 13 px while short main content renders at 24 px desktop / 21 px mobile.
-- Reduced preview QR to 42 px and added the same real QR to PNG export.
-- Reduced image-less auto export minimum height from 1180 to 820 px.
+- Fonts and typography: card typography is unchanged; the scoped media-grid change introduces no wrapping or hierarchy regression.
+- Spacing and layout rhythm: gallery gaps are consistently 8 px, all grid columns align, and no incomplete row leaves a blank region.
+- Colors and visual tokens: existing Cardly theme tokens are preserved.
+- Image quality and asset fidelity: source images remain real raster assets; thumbnails use intentional cover crops and the hero uses a wide crop matching the reference.
+- Copy and content: unchanged.
 
-## Evidence
+**Primary Interactions Tested**
 
-- Broken production screenshot: 609 × 619 with oversized publisher title, tiny body, 128 px QR, missing inset surface, and large empty region.
-- Fixed preview: 500 × 416, 13 px publisher, 24 px body, 42 px QR, no images, no horizontal overflow.
-- Fixed mobile preview: 326 × 402, 13 px publisher, 21 px body, 42 px QR, no horizontal overflow.
-- Fixed PNG: 1080 × 820, 515275 bytes, compact content-driven height and QR at bottom right.
-- Local API 404 messages are expected from the static Python preview server; production API verification is required after deployment.
+- Uploaded seven images through the real file-input flow.
+- Confirmed automatic layout selection after image decoding.
+- Confirmed desktop and mobile responsive geometry.
+- Confirmed the same layout planner is exercised by PNG export unit coverage.
+- Browser console exceptions checked: none.
 
-## Required fidelity surfaces
+**Comparison History**
 
-- Typography: publisher and main body hierarchy restored and verified using the user's exact text.
-- Spacing: inset surface, compact content height, footer spacing, and outer gradient frame restored.
-- Colors: original Cardly mist gradient and translucent white surface retained.
-- Images: no unrelated fallback image appears when extraction returns no image.
-- Copy: X.COM comes from the actual link; placeholder @DESIGNNOTES is removed.
-- Responsiveness: desktop and mobile have no horizontal overflow.
-- Export: preview and PNG share the same compact hierarchy and QR placement.
+1. Initial issue (P1): seven images rendered as a 3-column grid with a single orphan tile in the last row, leaving a large blank area.
+2. Fix: added a remainder-aware featured layout. Counts 7 and 10 render complete 3-column rows plus a full-width hero; counts 8 and 11 render complete rows plus two balanced wide tiles.
+3. Post-fix evidence: `../audit-v28/gallery-comparison.jpg` shows the reference and implementation with the same 3 x 2 + hero hierarchy. Desktop and mobile geometry checks show no overflow.
 
-## Comparison history
+**Implementation Checklist**
 
-1. User reported version 7 as worse than the original.
-2. Screenshot audit isolated mixed cached assets as the primary regression.
-3. Cache busting and content-empty rules fixed the visual hierarchy and blank space.
-4. A same-content before/after/export comparison found the placeholder source label; it was replaced with X.COM.
-5. Final local comparison has no remaining P0/P1/P2 visual regression.
+- [x] Match the seven-image reference composition.
+- [x] Eliminate orphan rows for image counts 1 through 12.
+- [x] Keep preview and PNG export on the same layout planner.
+- [x] Verify desktop and mobile layouts.
+- [x] Verify console errors.
+- [x] Add regression tests.
+
+**Follow-up Polish**
+
+- None required for this scope.
 
 final result: passed

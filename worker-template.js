@@ -75,6 +75,9 @@ function mediaKey(value) {
   const parsed = safeUrl(decoded);
   if (!parsed) return decoded;
   const host = parsed.hostname.toLowerCase().replace(/^sns-webpic-[^.]+\./, '');
+  if (host.endsWith('cdninstagram.com') || host.endsWith('fbcdn.net')) {
+    return 'instagram:' + parsed.pathname;
+  }
   if (host.endsWith('xhscdn.com')) {
     return host + parsed.pathname.replace(/![^/]+$/, '');
   }
@@ -766,7 +769,8 @@ async function extractInstagram(target, requestUrl) {
   }
 
   const edges = post?.edge_sidecar_to_children?.edges || [];
-  const carouselItems = [...edges.map(edge => edge?.node), ...(post?.carousel_media || [])].filter(Boolean);
+  const edgeItems = edges.map(edge => edge?.node).filter(Boolean);
+  const carouselItems = edgeItems.length ? edgeItems : (post?.carousel_media || []).filter(Boolean);
   const mediaItems = carouselItems.length ? carouselItems : [post].filter(Boolean);
   const media = uniqueMedia(mediaItems.map(item => firstValue(
     item.display_url,
