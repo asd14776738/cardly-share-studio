@@ -916,7 +916,18 @@ async function extractDouyin(target, requestUrl) {
     const items = Array.isArray(value) ? value : value ? [value] : [];
     return uniqueMedia(items.map(item => imageValues(item)[0]).filter(Boolean));
   };
-  const imagePostMedia = logicalImages(aweme?.images);
+  const routePath = (finalTarget.pathname + ' ' + target.pathname).toLowerCase();
+  const awemeType = Number(aweme?.aweme_type ?? aweme?.awemeType);
+  const isImagePost = /\/(?:note|share\/note)\//i.test(routePath) ||
+    awemeType === 68 || Boolean(aweme?.image_post_info);
+  const hasPlayableVideo = Boolean(
+    video.play_addr || video.playAddr || video.bit_rate?.length || video.bitRate?.length,
+  );
+  const isVideoPost = !isImagePost && (
+    Boolean(videoId) || /\/(?:video|share\/video)\//i.test(routePath) ||
+    hasPlayableVideo || awemeType === 0 || awemeType === 2
+  );
+  const imagePostMedia = isVideoPost ? [] : logicalImages(aweme?.images);
   const videoCover = firstValue(
     imageValues(video.origin_cover)[0],
     imageValues(video.cover)[0],

@@ -126,7 +126,7 @@ globalThis.fetch = async input => {
     <meta property="og:title" content="豆瓣电影标题"><meta property="og:image" content="https://img1.doubanio.com/poster.jpg">
     <span property="v:summary">豆瓣条目简介</span><a rel="v:directedBy">导演甲</a>`);
   if (url.startsWith('https://v.douyin.com/u9hdlMEybs0/')) {
-    const router = { loaderData: { page: { videoInfoRes: { item_list: [{ aweme_id: '7565171239478005002', desc: '\u5b58\u4e00\u7ec4\u53cd\u5b63\u8282\u7684\u62a4\u773c\u58c1\u7eb8\u3002', author: { nickname: '\u58c1\u7eb8\u4f5c\u8005' }, statistics: { play_count: 86520, digg_count: 7314 }, video: { origin_cover: { url_list: ['https://p3.douyinpic.com/wallpaper-cover.jpg'] } } }] } } } };
+    const router = { loaderData: { page: { videoInfoRes: { item_list: [{ aweme_id: '7565171239478005002', aweme_type: 2, desc: '\u5b58\u4e00\u7ec4\u53cd\u5b63\u8282\u7684\u62a4\u773c\u58c1\u7eb8\u3002', author: { nickname: '\u58c1\u7eb8\u4f5c\u8005' }, statistics: { play_count: 86520, digg_count: 7314 }, video: { play_addr: { url_list: ['https://v3.douyinvod.com/wallpaper.mp4'] }, origin_cover: { url_list: ['https://p3.douyinpic.com/wallpaper-cover.jpg'] } }, images: Array.from({ length: 30 }, (_, index) => ({ url_list: ['https://p3.douyinpic.com/wallpaper-frame-' + index + '.jpg'] })) }] } } } };
     return html('<script>window._ROUTER_DATA = ' + JSON.stringify(router) + '</script>');
   }
   if (url.startsWith('https://www.douyin.com/video/789')) return html('<title>在抖音记录美好生活 - 抖音</title>');
