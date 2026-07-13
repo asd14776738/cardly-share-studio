@@ -44,6 +44,7 @@ function decode(value) {
   return String(value || '')
     .replace(/&amp;/gi, '&').replace(/&quot;/gi, '"').replace(/&#39;|&#x27;/gi, "'")
     .replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&#x2F;/gi, '/')
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(Number.parseInt(n, 16)))
     .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n))).trim();
 }
 
@@ -741,15 +742,19 @@ async function extractInstagram(target, requestUrl) {
     item.thumbnail_src,
     ...imageValues(item.image_versions2?.candidates),
   ]));
+  const embedCaption = text.match(/<div[^>]+class=["'][^"']*\bCaption\b[^"']*["'][^>]*>([\s\S]*?)(?=<div[^>]+class=["'][^"']*CaptionComments|<\/div>)/i)?.[1] || '';
   const rawCaption = firstValue(
     post?.caption?.text,
     post?.edge_media_to_caption?.edges?.[0]?.node?.text,
-    text.match(/<div[^>]+class=["'][^"']*(?:Caption|caption)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1],
+    embedCaption,
     meta.description,
   );
+  const captionAuthor = textOnly(embedCaption.match(/<a\b[^>]+data-log-event=["']captionProfileClick["'][^>]*>([\s\S]*?)<\/a>/i)?.[1] || '');
+  const author = firstValue(post?.owner?.username, post?.user?.username, captionAuthor, meta.author);
+  let captionText = multilineText(rawCaption);
+  if (captionAuthor && captionText.startsWith(captionAuthor)) captionText = captionText.slice(captionAuthor.length).trim();
   const generic = value => /^(?:Instagram|Log in|Sign up)\s*$|create an account|see photos and videos/i.test(textOnly(value));
-  const caption = generic(rawCaption) ? '' : rawCaption;
-  const author = firstValue(post?.owner?.username, post?.user?.username, meta.author);
+  const caption = generic(captionText) ? '' : captionText;
   const hasPublicContent = Boolean(caption || media.length || meta.images.length);
   return finalResult({
     title: firstValue(author && '@' + author + ' on Instagram', meta.title),

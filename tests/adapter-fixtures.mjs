@@ -81,6 +81,10 @@ globalThis.fetch = async input => {
   if (url.startsWith('https://open.spotify.com/oembed')) return json({
     title: 'Spotify Song', author_name: 'Spotify Artist', thumbnail_url: 'https://i.scdn.co/cover.jpg',
   });
+  if (url.startsWith('https://www.instagram.com/p/DacpRzeMiMA/embed/captioned/')) return html(`
+    <meta property="og:title" content="Instagram &amp;#x7528;&amp;#x6237;: Houston Rockets T&amp;#xfc;rkiye">
+    <meta property="og:image" content="https://scontent.cdninstagram.com/alperen.jpg">
+    <div class="Caption"><a data-log-event="captionProfileClick">rocketstur</a><br><br>Bu gece Alperen &#x15e;eng&#xfc;n f&#x131;rt&#x131;nas&#x131; Sinan Erdem Spor Salonu&#x2019;nda esecek!<br><br>Ba&#x15f;ar&#x131;lar Milli Tak&#x131;m &#x1f1f9;&#x1f1f7;<div class="CaptionComments">View all 37 comments</div></div>`);
   if (url.startsWith('https://www.instagram.com/reel/CODE2/embed/captioned/')) return new Response('', { status: 403 });
   if (url.startsWith('https://www.instagram.com/reel/CODE2/embed/')) return html('<title>Log in • Instagram</title>');
   if (url.startsWith('https://www.instagram.com/reel/CODE2/')) return html(`
@@ -163,6 +167,7 @@ const cases = [
   ['Weibo metadata fallback', 'https://weibo.com/user/fallbackid', { platform: 'weibo', strategy: 'weibo-login-wall', title: 'Fallback Weibo Post', images: 1, status: 'partial' }],
   ['Xiaohongshu single body image', 'https://www.xiaohongshu.com/discovery/item/note-single', { platform: 'xiaohongshu', strategy: 'xiaohongshu-initial-state', title: 'Single image note', images: 1, imageIncludes: 'post-default.jpg' }],
   ['Instagram script fallback', 'https://www.instagram.com/reel/CODE2/', { platform: 'instagram', strategy: 'instagram-json-state', title: '@fallback_author on Instagram', author: 'fallback_author', images: 1, metricType: 'views', metricCount: 45678 }],
+  ['Instagram 十六进制实体解码', 'https://www.instagram.com/p/DacpRzeMiMA/', { platform: 'instagram', strategy: 'instagram-embed', title: '@rocketstur on Instagram', author: 'rocketstur', descriptionIncludes: 'Şengün fırtınası', descriptionExcludes: ['&#x', 'View all 37 comments'], images: 1 }],
 
   ['知乎', 'https://www.zhihu.com/question/100/answer/200', { platform: 'zhihu', strategy: 'zhihu-answer-api', title: '知乎问题标题', author: '知乎作者', images: 1 }],
   ['微博', 'https://m.weibo.cn/status/post1', { platform: 'weibo', strategy: 'weibo-public-json', titleEmpty: true, author: '微博作者', images: 2, metricType: 'likes', metricCount: 3482 }],
@@ -200,6 +205,7 @@ for (const [name, url, expected] of cases) {
   if (expected.titleEmpty) assert.equal(result.title, '', name + ' empty title');
   if (expected.author) assert.equal(result.author, expected.author, name + ' author');
   if (expected.descriptionIncludes) assert.ok(result.description.includes(expected.descriptionIncludes), name + ' description');
+  if (expected.descriptionExcludes) for (const value of expected.descriptionExcludes) assert.ok(!result.description.includes(value), name + ' description excludes ' + value);
   if (expected.status) assert.equal(result.status, expected.status, name + ' status');
   assert.equal(result.imageCount, expected.images, name + ' image count');
   if (expected.imageIncludes) assert.ok(result.image.includes(expected.imageIncludes), name + ' preferred image');
