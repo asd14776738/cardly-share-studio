@@ -369,7 +369,7 @@ async function extractWeibo(target, requestUrl) {
           imageValues(item?.largest || item?.large || item?.original || item)
         );
         return finalResult({
-          title: post.user?.screen_name ? post.user.screen_name + ' \u7684\u5fae\u535a' : '\u5fae\u535a',
+          title: '',
           description: post.text_raw || post.text || '',
           author: post.user?.screen_name || '',
           images: uniqueMedia([...pictures, ...imageValues(post.page_info?.page_pic)]),
@@ -399,7 +399,7 @@ async function extractWeibo(target, requestUrl) {
   });
   if (renderedPost) {
     return finalResult({
-      title: renderedPost.user?.screen_name ? renderedPost.user.screen_name + ' \u7684\u5fae\u535a' : meta.title,
+      title: '',
       description: firstValue(renderedPost.text_raw, renderedPost.text, meta.description),
       author: firstValue(renderedPost.user?.screen_name, meta.author),
       viewCount: firstValue(renderedPost.reads_count, renderedPost.read_count, renderedPost.view_count),

@@ -149,7 +149,7 @@ const cases = [
   ['Instagram script fallback', 'https://www.instagram.com/reel/CODE2/', { platform: 'instagram', strategy: 'instagram-json-state', title: '@fallback_author on Instagram', author: 'fallback_author', images: 1, metricType: 'views', metricCount: 45678 }],
 
   ['知乎', 'https://www.zhihu.com/question/100/answer/200', { platform: 'zhihu', strategy: 'zhihu-answer-api', title: '知乎问题标题', author: '知乎作者', images: 1 }],
-  ['微博', 'https://m.weibo.cn/status/post1', { platform: 'weibo', strategy: 'weibo-public-json', title: '微博作者 的微博', author: '微博作者', images: 2, metricType: 'likes', metricCount: 3482 }],
+  ['微博', 'https://m.weibo.cn/status/post1', { platform: 'weibo', strategy: 'weibo-public-json', titleEmpty: true, author: '微博作者', images: 2, metricType: 'likes', metricCount: 3482 }],
   ['微信', 'https://mp.weixin.qq.com/s/abc', { platform: 'wechat', strategy: 'wechat-article-html', title: '微信文章标题', author: '公众号作者', images: 2, minutes: 4 }],
   ['小红书', 'https://www.xiaohongshu.com/discovery/item/note1', { platform: 'xiaohongshu', strategy: 'xiaohongshu-initial-state', title: '小红书标题', author: '小红书作者', images: 2, metricType: 'likes', metricCount: 26000 }],
   ['即刻', 'https://web.okjike.com/originalPost/post1', { platform: 'jike', strategy: 'jike-ssr-state', author: '即刻作者', images: 1 }],
@@ -180,6 +180,7 @@ for (const [name, url, expected] of cases) {
   assert.equal(result.platform, expected.platform, name + ' platform');
   assert.equal(result.strategy, expected.strategy, name + ' strategy');
   if (expected.title) assert.equal(result.title, expected.title, name + ' title');
+  if (expected.titleEmpty) assert.equal(result.title, '', name + ' empty title');
   if (expected.author) assert.equal(result.author, expected.author, name + ' author');
   if (expected.status) assert.equal(result.status, expected.status, name + ' status');
   assert.equal(result.imageCount, expected.images, name + ' image count');

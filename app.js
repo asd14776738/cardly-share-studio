@@ -576,8 +576,17 @@ qs('#generate-button').addEventListener('click', async () => {
     const response = await fetch('/api/extract?url=' + encodeURIComponent(value));
     const metadata = await response.json().catch(() => null);
     if (!response.ok) throw new Error(metadata?.detail || metadata?.error || '提取失败');
-    state.title = metadata?.title || host;
     state.platform = metadata?.platform || state.source;
+    state.author = metadata?.author || metadata?.platformLabel || host;
+    const extractedTitle = String(metadata?.title || '').trim();
+    const compactTitle = extractedTitle.replace(/\s+/g, '');
+    const compactAuthor = String(state.author || '').replace(/\s+/g, '');
+    const redundantWeiboTitle = state.platform === 'weibo' && (
+      !extractedTitle ||
+      compactTitle === '\u5fae\u535a' ||
+      compactTitle === compactAuthor + '\u7684\u5fae\u535a'
+    );
+    state.title = redundantWeiboTitle ? '' : extractedTitle || host;
     if (sourceData[state.platform]) {
       state.source = state.platform;
       qsa('.source-tab').forEach(tab => {
@@ -586,7 +595,6 @@ qs('#generate-button').addEventListener('click', async () => {
         tab.setAttribute('aria-selected', String(selected));
       });
     }
-    state.author = metadata?.author || metadata?.platformLabel || host;
     authorInput.value = state.author;
     const sourceLabels = { douyin: '\u6296\u97f3', weibo: '微博', xiaohongshu: '小红书', instagram: 'Instagram', x: 'X' };
     state.sourceLabel = sourceLabels[state.platform] || metadata?.platformLabel || host;
