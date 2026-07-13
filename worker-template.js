@@ -572,6 +572,30 @@ async function extractXiaohongshu(target, requestUrl) {
   }, finalTarget, requestUrl);
 }
 async function extractJike(target, requestUrl) {
+  const postId = target.pathname.match(/\/(?:originalPost|post)\/([A-Za-z0-9-]+)/i)?.[1];
+  if (postId) {
+    try {
+      const endpoint = new URL('https://api.ruguoapp.com/1.0/originalPosts/get');
+      endpoint.searchParams.set('id', postId);
+      const payload = await fetchJson(endpoint, {
+        referer: 'https://web.okjike.com/',
+        origin: 'https://web.okjike.com',
+      });
+      const post = payload?.data || payload;
+      const creator = post?.user || post?.creator || {};
+      if (post && (post.content || creator.screenName || post.pictures?.length)) {
+        return finalResult({
+          title: firstValue(post.title, post.topic?.content),
+          description: firstValue(post.content, post.text, post.description),
+          author: firstValue(creator.screenName, creator.username, creator.name),
+          viewCount: firstValue(post.viewCount, post.stats?.viewCount),
+          likeCount: firstValue(post.likeCount, post.stats?.likeCount),
+          images: uniqueMedia(logicalImageValues(post.pictures || post.images || post.pictureUrls)),
+          strategy: 'jike-public-api',
+        }, target, requestUrl);
+      }
+    } catch {}
+  }
   const { response, text } = await fetchText(target, { referer: 'https://web.okjike.com/' });
   const finalTarget = safeUrl(response.url) || target;
   const meta = parseMeta(text, finalTarget);
@@ -704,6 +728,7 @@ async function extractInstagram(target, requestUrl) {
   let meta = { title: '', description: '', author: '', images: [] };
   let states = [];
   let post = null;
+  let embedMedia = [];
 
   for (const source of sources) {
     try {
@@ -715,6 +740,11 @@ async function extractInstagram(target, requestUrl) {
       const nextMeta = parseMeta(page.text, source);
       if (!meta.description && nextMeta.description) meta = nextMeta;
       else meta.images = uniqueMedia([...(meta.images || []), ...(nextMeta.images || [])]);
+      embedMedia = uniqueMedia([
+        ...embedMedia,
+        ...[...page.text.matchAll(/<img\b[^>]*class=["'][^"']*\bEmbeddedMediaImage\b[^"']*["'][^>]*>/gi)]
+          .map(match => decode(match[0].match(/\bsrc=["']([^"']+)["']/i)?.[1] || '')),
+      ]);
       states.push(...parseJsonScripts(page.text));
       post = findBestObject(states, scorePost);
       if (post && (post.caption?.text || post.edge_media_to_caption || post.display_url || post.carousel_media)) break;
@@ -755,14 +785,15 @@ async function extractInstagram(target, requestUrl) {
   if (captionAuthor && captionText.startsWith(captionAuthor)) captionText = captionText.slice(captionAuthor.length).trim();
   const generic = value => /^(?:Instagram|Log in|Sign up)\s*$|create an account|see photos and videos/i.test(textOnly(value));
   const caption = generic(captionText) ? '' : captionText;
-  const hasPublicContent = Boolean(caption || media.length || meta.images.length);
+  const resolvedMedia = media.length ? media : embedMedia.length ? embedMedia : meta.images;
+  const hasPublicContent = Boolean(caption || resolvedMedia.length);
   return finalResult({
     title: firstValue(author && '@' + author + ' on Instagram', meta.title),
     description: caption,
     author,
     viewCount: firstValue(post?.video_view_count, post?.video_play_count, post?.view_count, post?.play_count),
     likeCount: firstValue(post?.edge_media_preview_like?.count, post?.edge_liked_by?.count, post?.like_count),
-    images: uniqueMedia([...media, ...meta.images]),
+    images: uniqueMedia(resolvedMedia),
     strategy: post ? 'instagram-json-state' : code ? 'instagram-embed' : 'instagram-page',
     status: hasPublicContent
       ? (post ? 'ok' : 'partial')

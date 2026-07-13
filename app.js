@@ -502,7 +502,7 @@ qs('#zoom-out').addEventListener('click', () => setZoom(zoomLevel - 5));
 qs('#zoom-in').addEventListener('click', () => setZoom(zoomLevel + 5));
 
 refreshContentPalette();
-setZoom(90);
+setZoom(100);
 
 titleInput.addEventListener('input', () => {
   state.title = titleInput.value || '输入你的标题';

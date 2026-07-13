@@ -6,6 +6,16 @@ const json = value => new Response(JSON.stringify(value), { status: 200, headers
 
 globalThis.fetch = async input => {
   const url = String(input);
+  if (url.startsWith('https://api.ruguoapp.com/1.0/originalPosts/get') && url.includes('6a54a28d54aae0885e7b2e35')) return json({
+    data: {
+      id: '6a54a28d54aae0885e7b2e35',
+      content: '虽然没上班，但随机赚了笔算 命 钱💰，舒服了。',
+      user: { screenName: '漆蝶', username: 'A7FF9DED-2FC3-4AC1-A392-92A697DF718B' },
+      topic: { content: '今日小确幸' },
+      likeCount: 50,
+      pictures: [{ url: 'https://cdnv2.ruguoapp.com/FiyLAFULL.jpg' }],
+    },
+  });
   if (url.startsWith('https://api.zhihu.com/answers/200')) return json({
     content: '<p>知乎回答正文，包含足够的信息。</p><img src="https://pic.zhimg.com/a.jpg">',
     question: { title: '知乎问题标题' },
@@ -83,7 +93,8 @@ globalThis.fetch = async input => {
   });
   if (url.startsWith('https://www.instagram.com/p/DacpRzeMiMA/embed/captioned/')) return html(`
     <meta property="og:title" content="Instagram &amp;#x7528;&amp;#x6237;: Houston Rockets T&amp;#xfc;rkiye">
-    <meta property="og:image" content="https://scontent.cdninstagram.com/alperen.jpg">
+    <meta property="og:image" content="https://scontent.cdninstagram.com/cropped.jpg">
+    <img class="EmbeddedMediaImage" src="https://scontent.cdninstagram.com/full.jpg">
     <div class="Caption"><a data-log-event="captionProfileClick">rocketstur</a><br><br>Bu gece Alperen &#x15e;eng&#xfc;n f&#x131;rt&#x131;nas&#x131; Sinan Erdem Spor Salonu&#x2019;nda esecek!<br><br>Ba&#x15f;ar&#x131;lar Milli Tak&#x131;m &#x1f1f9;&#x1f1f7;<div class="CaptionComments">View all 37 comments</div></div>`);
   if (url.startsWith('https://www.instagram.com/reel/CODE2/embed/captioned/')) return new Response('', { status: 403 });
   if (url.startsWith('https://www.instagram.com/reel/CODE2/embed/')) return html('<title>Log in • Instagram</title>');
@@ -167,7 +178,8 @@ const cases = [
   ['Weibo metadata fallback', 'https://weibo.com/user/fallbackid', { platform: 'weibo', strategy: 'weibo-login-wall', title: 'Fallback Weibo Post', images: 1, status: 'partial' }],
   ['Xiaohongshu single body image', 'https://www.xiaohongshu.com/discovery/item/note-single', { platform: 'xiaohongshu', strategy: 'xiaohongshu-initial-state', title: 'Single image note', images: 1, imageIncludes: 'post-default.jpg' }],
   ['Instagram script fallback', 'https://www.instagram.com/reel/CODE2/', { platform: 'instagram', strategy: 'instagram-json-state', title: '@fallback_author on Instagram', author: 'fallback_author', images: 1, metricType: 'views', metricCount: 45678 }],
-  ['Instagram 十六进制实体解码', 'https://www.instagram.com/p/DacpRzeMiMA/', { platform: 'instagram', strategy: 'instagram-embed', title: '@rocketstur on Instagram', author: 'rocketstur', descriptionIncludes: 'Şengün fırtınası', descriptionExcludes: ['&#x', 'View all 37 comments'], images: 1 }],
+  ['Instagram 十六进制实体解码', 'https://www.instagram.com/p/DacpRzeMiMA/', { platform: 'instagram', strategy: 'instagram-embed', title: '@rocketstur on Instagram', author: 'rocketstur', descriptionIncludes: 'Şengün fırtınası', descriptionExcludes: ['&#x', 'View all 37 comments'], images: 1, imageIncludes: 'full.jpg' }],
+  ['即刻公开帖子接口', 'https://web.okjike.com/u/A7FF9DED-2FC3-4AC1-A392-92A697DF718B/post/6a54a28d54aae0885e7b2e35', { platform: 'jike', strategy: 'jike-public-api', title: '今日小确幸', author: '漆蝶', descriptionIncludes: '随机赚了笔', images: 1, imageIncludes: 'FiyLAFULL.jpg', metricType: 'likes', metricCount: 50 }],
 
   ['知乎', 'https://www.zhihu.com/question/100/answer/200', { platform: 'zhihu', strategy: 'zhihu-answer-api', title: '知乎问题标题', author: '知乎作者', images: 1 }],
   ['微博', 'https://m.weibo.cn/status/post1', { platform: 'weibo', strategy: 'weibo-public-json', titleEmpty: true, author: '微博作者', images: 2, metricType: 'likes', metricCount: 3482 }],
