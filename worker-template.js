@@ -70,15 +70,24 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function mediaAssetName(pathname) {
+  let filename = String(pathname || '').split('/').filter(Boolean).pop() || '';
+  try { filename = decodeURIComponent(filename); } catch {}
+  return filename.replace(/\.(?:avif|webp|png|jpe?g)$/i, '').toLowerCase();
+}
+
 function mediaKey(value) {
   const decoded = decode(value);
   const parsed = safeUrl(decoded);
   if (!parsed) return decoded;
   const host = parsed.hostname.toLowerCase().replace(/^sns-webpic-[^.]+\./, '');
+  const assetName = mediaAssetName(parsed.pathname);
   if (host.endsWith('cdninstagram.com') || host.endsWith('fbcdn.net')) {
+    if (/\d{8,}/.test(assetName)) return 'instagram-asset:' + assetName;
     return 'instagram:' + parsed.pathname;
   }
   if (host.endsWith('xhscdn.com')) {
+    if (/^[a-z0-9_-]{16,}$/i.test(assetName)) return 'xiaohongshu-asset:' + assetName;
     return host + parsed.pathname.replace(/![^/]+$/, '');
   }
   for (const key of ['imageView2', 'imageMogr2', 'x-oss-process', 'x-image-process', 'w', 'h', 'width', 'height', 'q', 'quality', 'format']) {

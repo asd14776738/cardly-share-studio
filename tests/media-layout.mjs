@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
-import { chooseMediaLayout, buildAutoMediaLayout } from '../media-layout.js';
+import { buildAutoMediaLayout, chooseMediaLayout, fixedMediaColumns } from '../media-layout.js';
+
+assert.deepEqual(
+  [0, 1, 2, 4, 5, 9, 10, 12].map(fixedMediaColumns),
+  [1, 1, 2, 2, 3, 3, 4, 4],
+  'fixed-ratio galleries should scale from one to four columns',
+);
 
 const dogSet = [
   { width: 1200, height: 900 },

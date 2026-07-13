@@ -53,6 +53,11 @@ export function chooseMediaLayout(items = []) {
   return { type, columns, heroIndex, wideIndices, portrait, orderedIndices };
 }
 
+export function fixedMediaColumns(count = 0) {
+  const total = Math.max(0, Math.min(12, Number(count) || 0));
+  return total >= 10 ? 4 : total >= 5 ? 3 : total >= 2 ? 2 : 1;
+}
+
 export function buildAutoMediaLayout(items = [], width, gap = 18) {
   const plan = chooseMediaLayout(items);
   if (!items.length || width <= 0) return { ...plan, cells: [], height: 0 };

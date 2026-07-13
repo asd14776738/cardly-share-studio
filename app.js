@@ -1,5 +1,5 @@
 import { estimateReadingMinutes, buildKicker } from './reading-time.js';
-import { chooseMediaLayout, buildAutoMediaLayout } from './media-layout.js';
+import { buildAutoMediaLayout, chooseMediaLayout, fixedMediaColumns } from './media-layout.js';
 import { buildContentPalette, summarizeImagePixels } from './palette-engine.js';
 import { formatSourceLink } from './source-link.js';
 import { mergeHashtags, splitHashtags } from './hashtags.js';
@@ -263,6 +263,8 @@ function applyMediaGalleryLayout(gallery) {
   gallery.className = `media-gallery media-count-${Math.min(images.length, 4)} gallery-layout-${layout.type}`;
   gallery.classList.toggle('gallery-portrait', layout.portrait);
   gallery.style.setProperty('--gallery-columns', layout.columns);
+  const fixedColumns = fixedMediaColumns(images.length);
+  gallery.style.setProperty('--fixed-columns', fixedColumns);
   const orderByIndex = new Map(layout.orderedIndices.map((index, order) => [index, order + 1]));
   images.forEach((image, index) => {
     image.classList.toggle('media-hero', index === layout.heroIndex);
@@ -296,12 +298,14 @@ function updateCard() {
   const content = canvasContent();
   const density = contentDensity(content.description);
   const role = titleRole(content.title);
-  const mediaState = (state.images || []).some(Boolean) ? 'has-media' : 'no-media';
+  const mediaCount = (state.images || []).filter(Boolean).length;
+  const mediaState = mediaCount ? 'has-media' : 'no-media';
+  const mediaVolume = mediaCount >= 10 ? 'media-packed' : mediaCount >= 5 ? 'media-many' : 'media-regular';
   const theme = state.theme === 'dynamic'
     ? state.dynamicTheme || paletteForContent()
     : themeConfig[state.theme] || themeConfig.coastal;
   const duplicateTitle = content.duplicateTitle;
-  card.className = `share-card theme-${state.theme} ratio-${state.ratio} layout-${state.layout} source-${state.source} density-${density} title-${role} ${duplicateTitle ? 'title-duplicate' : ''} ${mediaState} font-${state.font || 'sans'}`;
+  card.className = `share-card theme-${state.theme} ratio-${state.ratio} layout-${state.layout} source-${state.source} density-${density} title-${role} ${duplicateTitle ? 'title-duplicate' : ''} ${mediaState} ${mediaVolume} font-${state.font || 'sans'}`;
   card.style.setProperty('--theme-a', theme.stops[0]);
   card.style.setProperty('--theme-b', theme.stops[1]);
   card.style.setProperty('--theme-c', theme.stops[2]);
@@ -359,6 +363,8 @@ function updateCard() {
   footerArrowLink.href = sourceLink.href || '#';
   footerArrowLink.hidden = !sourceLink.href;
   footerSourceUrl.textContent = sourceLink.display;
+  footerSourceUrl.classList.toggle('is-long', sourceLink.display.length > 84);
+  footerSourceUrl.classList.toggle('is-very-long', sourceLink.display.length > 160);
   qs('#char-count').textContent = `${state.description.length} 字 · ${density === 'short' ? '短内容' : density === 'medium' ? '中等内容' : '长内容'}`;
   qs('#image-count').textContent = state.images?.length ? `${state.images.length} 张图片 · 自动排列` : '可多选，自动排列';
   qs('#canvas-size').textContent = state.ratio === 'auto' ? '1080 × 自动高度' : state.ratio === 'wide' ? '1600 × 900' : state.ratio === 'portrait' ? '1080 × 1350' : '1080 × 1080';

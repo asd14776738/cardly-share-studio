@@ -8,14 +8,7 @@ function isTrackingParameter(name) {
   return normalized.startsWith('utm_') || trackingParameters.has(normalized);
 }
 
-function shortenMiddle(value, maxLength) {
-  if (value.length <= maxLength) return value;
-  const tailLength = Math.min(10, Math.floor(maxLength * .24));
-  const headLength = Math.max(10, maxLength - tailLength - 1);
-  return `${value.slice(0, headLength)}…${value.slice(-tailLength)}`;
-}
-
-export function formatSourceLink(value, maxLength = 52) {
+export function formatSourceLink(value) {
   try {
     const url = new URL(String(value || '').trim());
     if (!['http:', 'https:'].includes(url.protocol)) return { href: '', display: '' };
@@ -23,12 +16,10 @@ export function formatSourceLink(value, maxLength = 52) {
       if (isTrackingParameter(name)) url.searchParams.delete(name);
     }
     url.hash = '';
-    const host = url.hostname.replace(/^www\./i, '').toLowerCase();
-    let path = url.pathname === '/' ? '' : decodeURIComponent(url.pathname).replace(/\/$/, '');
-    const query = url.searchParams.toString();
-    let display = host + path + (query ? `?${query}` : '');
-    display = shortenMiddle(display, Math.max(24, maxLength));
-    return { href: url.href, display };
+    url.username = '';
+    url.password = '';
+    const href = url.href;
+    return { href, display: href };
   } catch {
     return { href: '', display: '' };
   }
