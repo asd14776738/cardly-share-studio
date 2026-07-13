@@ -58,10 +58,14 @@ const defaults = {
   readingMinutes: null,
   ratio: 'auto',
   layout: 'editorial',
-  theme: 'mist',
+  theme: 'coastal',
+  font: 'serif',
+  radius: 24,
+  padding: 36,
   url: 'https://www.archdaily.cn/cn/1012043',
   title: '在海风与山影之间，重新想象公共空间',
   description: '一座面向海岸的文化建筑，以层叠露台连接城市生活与自然景观。',
+  author: 'ARCHDAILY.CN',
   image: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1600&q=88'
 };
 
@@ -77,6 +81,30 @@ const sourceData = {
     title: '在海风与山影之间，重新想象公共空间',
     description: '一座面向海岸的文化建筑，以层叠露台连接城市生活与自然景观。',
     image: defaults.image
+  },
+  weibo: {
+    hint: '支持微博正文、图集和整段分享口令；受限内容可继续手动编辑',
+    placeholder: 'https://weibo.com/user/status 或粘贴整段分享文案',
+    name: '微博', icon: '微', iconUrl: iconForUrl('https://weibo.com'),
+    title: '今天也想记录一点值得留住的事。',
+    description: '粘贴公开微博链接，Cardly 会提取正文、作者与图片；若平台限制匿名读取，仍可手动补全。',
+    image: 'https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1600&q=88'
+  },
+  xiaohongshu: {
+    hint: '支持小红书公开笔记与 xhslink 短链',
+    placeholder: 'https://www.xiaohongshu.com/discovery/item/…',
+    name: '小红书', icon: 'RED', iconUrl: iconForUrl('https://www.xiaohongshu.com'),
+    title: '週末，在城市里收集光影。',
+    description: '穿过旧街区，玻璃、树影和晾晒的衣服让平常的一天有了电影感。',
+    image: 'https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?auto=format&fit=crop&w=1600&q=88'
+  },
+  douyin: {
+    hint: '支持抖音视频长链、v.douyin.com 短链与整段分享口令',
+    placeholder: 'https://v.douyin.com/… 或粘贴整段分享文案',
+    name: '抖音', icon: '♪', iconUrl: iconForUrl('https://www.douyin.com'),
+    title: '把一瞬间，留成一张值得分享的卡片。',
+    description: '公开作品会自动提取标题、作者与封面；已下架或受限作品会清楚提示，不再显示错误内容。',
+    image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1600&q=88'
   },
   telegram: {
     hint: '粘贴公开频道或公开消息链接',
@@ -104,6 +132,27 @@ const sourceData = {
   }
 };
 
+const themeConfig = {
+  coastal: { name: '海盐', stops: ['#a9dfe8','#eaf1ea','#efc8b5'], surface: 'rgba(255,255,255,.82)', text: '#171b20', dark: false },
+  ink: { name: '墨夜', stops: ['#11151c','#313b4a','#657080'], surface: 'rgba(13,17,24,.80)', text: '#ffffff', dark: true },
+  paper: { name: '暖纸', stops: ['#d8c39e','#eee4cf','#fbf7ed'], surface: 'rgba(255,252,244,.84)', text: '#27231d', dark: false },
+  film: { name: '胶片', stops: ['#756a58','#b6a582','#d9d2c1'], surface: 'rgba(248,243,232,.78)', text: '#26241f', dark: false },
+  berry: { name: '莓果', stops: ['#571536','#a94968','#e6acac'], surface: 'rgba(52,12,31,.76)', text: '#ffffff', dark: true },
+  jade: { name: '青岚', stops: ['#245b59','#75a197','#dce7d3'], surface: 'rgba(240,247,240,.80)', text: '#17302f', dark: false },
+  sky: { name: '天光', stops: ['#6eb2e5','#b9dcf3','#eaf7fb'], surface: 'rgba(255,255,255,.82)', text: '#172a3d', dark: false },
+  lilac: { name: '鸢尾', stops: ['#806ab7','#c4b5df','#eee9f7'], surface: 'rgba(250,248,255,.80)', text: '#27213b', dark: false },
+  sunrise: { name: '晨曦', stops: ['#f27d62','#f8b88a','#ffe3b4'], surface: 'rgba(255,250,242,.82)', text: '#342018', dark: false },
+  moss: { name: '苔原', stops: ['#314a39','#6f8659','#b4bd88'], surface: 'rgba(27,43,31,.76)', text: '#ffffff', dark: true },
+  sand: { name: '沙丘', stops: ['#a77c50','#cda878','#ead7b0'], surface: 'rgba(255,249,236,.80)', text: '#34271b', dark: false },
+  slate: { name: '岩灰', stops: ['#3e4651','#7c8792','#cbd0d5'], surface: 'rgba(24,29,35,.76)', text: '#ffffff', dark: true },
+  coral: { name: '珊瑚', stops: ['#de574f','#f58d78','#ffd1bd'], surface: 'rgba(255,248,242,.82)', text: '#3a1e1a', dark: false },
+  cobalt: { name: '钴蓝', stops: ['#1748cc','#4f7ee4','#a5c1fa'], surface: 'rgba(13,34,91,.76)', text: '#ffffff', dark: true },
+  lime: { name: '青柠', stops: ['#9fbd39','#cbdc72','#edf3b2'], surface: 'rgba(252,255,239,.82)', text: '#25300f', dark: false },
+  midnight: { name: '午夜', stops: ['#06182d','#253d70','#8d5d79'], surface: 'rgba(4,13,29,.78)', text: '#ffffff', dark: true },
+  rose: { name: '蔷薇', stops: ['#a53e60','#d6788f','#f1becb'], surface: 'rgba(255,246,249,.80)', text: '#371724', dark: false },
+  mono: { name: '黑白', stops: ['#0a0a0a','#767676','#eeeeee'], surface: 'rgba(255,255,255,.86)', text: '#111111', dark: false },
+};
+
 const state = { ...defaults, images: [...defaults.images] };
 const qs = (selector) => document.querySelector(selector);
 const qsa = (selector) => [...document.querySelectorAll(selector)];
@@ -111,6 +160,7 @@ const card = qs('#share-card');
 const titleInput = qs('#card-title');
 const descriptionInput = qs('#card-description');
 const urlInput = qs('#source-url');
+const authorInput = qs('#card-author');
 
 function showToast(message) {
   const toast = qs('#toast');
@@ -118,6 +168,23 @@ function showToast(message) {
   toast.classList.add('show');
   clearTimeout(showToast.timer);
   showToast.timer = setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+function extractUrlFromShare(value) {
+  const match = String(value || '').match(/https?:\/\/[^\s<>"'，。]+/i);
+  return match ? match[0].replace(/[)\]】）]+$/, '') : '';
+}
+
+function recommendedThemeForPlatform(platform) {
+  const map = { weibo: 'berry', douyin: 'midnight', x: 'ink', threads: 'mono', xiaohongshu: 'film', instagram: 'rose', telegram: 'sky', wechat: 'jade', zhihu: 'cobalt', netease_music: 'rose', qq_music: 'jade', spotify: 'moss', apple_music: 'mono', douban: 'paper' };
+  return map[platform] || 'coastal';
+}
+
+function setRecommendedTheme(themeName) {
+  const theme = themeConfig[themeName] || themeConfig.coastal;
+  state.recommendedTheme = themeName;
+  const label = qs('#recommend-label');
+  if (label) label.textContent = `已根据内容匹配 · ${theme.name}`;
 }
 
 function titleRole(text) {
@@ -165,10 +232,18 @@ function updateCard() {
   const density = contentDensity(state.description);
   const role = titleRole(state.title);
   const mediaState = (state.images || []).some(Boolean) ? 'has-media' : 'no-media';
-  card.className = `share-card theme-${state.theme} ratio-${state.ratio} layout-${state.layout} source-${state.source} density-${density} title-${role} ${mediaState}`;
+  const theme = themeConfig[state.theme] || themeConfig.coastal;
+  card.className = `share-card theme-${state.theme} ratio-${state.ratio} layout-${state.layout} source-${state.source} density-${density} title-${role} ${mediaState} font-${state.font || 'serif'}`;
+  card.style.setProperty('--theme-a', theme.stops[0]);
+  card.style.setProperty('--theme-b', theme.stops[1]);
+  card.style.setProperty('--theme-c', theme.stops[2]);
+  card.style.setProperty('--theme-surface', theme.surface);
+  card.style.setProperty('--theme-text', theme.text);
+  card.style.setProperty('--card-radius', `${state.radius || 0}px`);
+  card.style.setProperty('--surface-pad', `${state.padding || 36}px`);
   qs('#preview-card-title').textContent = state.title;
   qs('#preview-card-description').textContent = state.description;
-  qs('#source-name').textContent = sourceData[state.source].name;
+  qs('#source-name').textContent = state.author || sourceData[state.source].name;
   const sourceIcon = qs('#source-icon-image');
   const sourceFallback = qs('.source-brand-fallback');
   sourceFallback.textContent = sourceData[state.source].icon;
@@ -204,6 +279,8 @@ function selectSource(source, applyPreset = true) {
     state.image = sourceData[source].image;
     state.images = [sourceData[source].image];
     state.icon = sourceData[source].iconUrl;
+    state.author = sourceData[source].name;
+    authorInput.value = state.author;
     titleInput.value = state.title;
     descriptionInput.value = state.description;
   }
@@ -232,11 +309,43 @@ qs('#theme-control').addEventListener('click', event => {
   const button = event.target.closest('button[data-theme]');
   if (!button) return;
   state.theme = button.dataset.theme;
+  qs('#recommend-label').textContent = `当前主题 · ${themeConfig[state.theme].name}`;
   qsa('.theme-swatch').forEach(item => item.classList.toggle('active', item === button));
   updateCard();
 });
 
+qs('#theme-toggle').addEventListener('click', () => {
+  const list = qs('#theme-control');
+  const expanded = list.classList.toggle('show-all');
+  qs('#theme-toggle').textContent = expanded ? '收起主题' : '查看全部 18 个';
+});
+
+qs('#recommend-theme').addEventListener('click', () => {
+  state.theme = state.recommendedTheme || recommendedThemeForPlatform(state.platform);
+  qsa('.theme-swatch').forEach(item => item.classList.toggle('active', item.dataset.theme === state.theme));
+  updateCard();
+  showToast(`已应用智能推荐 · ${themeConfig[state.theme].name}`);
+});
+
+qs('#font-control').addEventListener('change', event => { state.font = event.target.value; updateCard(); });
+qs('#radius-control').addEventListener('input', event => { state.radius = Number(event.target.value); qs('#radius-value').textContent = event.target.value; updateCard(); });
+qs('#padding-control').addEventListener('input', event => { state.padding = Number(event.target.value); qs('#padding-value').textContent = event.target.value; updateCard(); });
+
+let zoomLevel = 85;
+function setZoom(next) {
+  zoomLevel = Math.max(60, Math.min(110, next));
+  card.style.setProperty('--preview-scale', zoomLevel / 100);
+  qs('#zoom-value').textContent = `${zoomLevel}%`;
+}
+qs('#zoom-out').addEventListener('click', () => setZoom(zoomLevel - 5));
+qs('#zoom-in').addEventListener('click', () => setZoom(zoomLevel + 5));
+
+setRecommendedTheme('coastal');
+setZoom(85);
+
 titleInput.addEventListener('input', () => { state.title = titleInput.value || '输入你的标题'; updateCard(); });
+authorInput.addEventListener('input', () => { state.author = authorInput.value || sourceData[state.source].name; updateCard(); });
+
 descriptionInput.addEventListener('input', () => {
   state.description = descriptionInput.value.slice(0, 2000);
   state.readingMinutes = null;
@@ -266,9 +375,10 @@ qs('#source-icon-image').addEventListener('error', () => {
 
 qs('#generate-button').addEventListener('click', async () => {
   const button = qs('#generate-button');
-  const value = urlInput.value.trim();
-  if (!value) { urlInput.focus(); return showToast('请先粘贴内容链接'); }
-  try { new URL(value); } catch { urlInput.focus(); return showToast('请输入完整的 https:// 链接'); }
+  const rawValue = urlInput.value.trim();
+  const value = extractUrlFromShare(rawValue);
+  if (!value) { urlInput.focus(); return showToast('请粘贴包含 https:// 的公开链接或分享口令'); }
+  urlInput.value = value;
   button.classList.add('loading');
   button.textContent = '正在生成…';
   state.url = value;
@@ -282,6 +392,8 @@ qs('#generate-button').addEventListener('click', async () => {
   sourceData[state.source].name = host;
   state.title = host;
   state.description = '';
+  state.author = host;
+  authorInput.value = state.author;
   titleInput.value = state.title;
   descriptionInput.value = '';
   try {
@@ -290,11 +402,26 @@ qs('#generate-button').addEventListener('click', async () => {
     if (!response.ok) throw new Error(metadata?.detail || metadata?.error || '提取失败');
     state.title = metadata?.title || host;
     state.platform = metadata?.platform || state.source;
+    if (sourceData[state.platform]) {
+      state.source = state.platform;
+      qsa('.source-tab').forEach(tab => {
+        const selected = tab.dataset.source === state.source;
+        tab.classList.toggle('active', selected);
+        tab.setAttribute('aria-selected', String(selected));
+      });
+    }
+    state.author = metadata?.author || metadata?.platformLabel || host;
+    authorInput.value = state.author;
+    setRecommendedTheme(recommendedThemeForPlatform(state.platform));
     state.contentStatus = metadata?.status || 'ok';
     state.readingMinutes = Number.isFinite(metadata?.readingMinutes) ? metadata.readingMinutes : estimateReadingMinutes(metadata?.description);
     const accessMessage = metadata?.status === 'login_required'
       ? `${metadata.platformLabel || '该平台'}限制匿名读取，请上传截图或手动粘贴正文`
-      : '';
+      : metadata?.status === 'unavailable'
+        ? `${metadata.platformLabel || '该内容'}已下架、审核中或仅自己可见，可手动粘贴正文继续排版`
+        : metadata?.status === 'partial'
+          ? '只提取到有限公开信息，可手动补充标题、正文和图片'
+          : '';
     state.description = (metadata?.description || accessMessage).slice(0, 2000);
     titleInput.value = state.title;
     descriptionInput.value = state.description;
@@ -306,6 +433,14 @@ qs('#generate-button').addEventListener('click', async () => {
       state.image = state.images[0];
     }
     if (metadata?.platformLabel) sourceData[state.source].name = metadata.platformLabel.toUpperCase();
+    const extractStatus = qs('#extract-status');
+    const extractSummary = qs('#extract-summary');
+    extractStatus.hidden = false;
+    extractStatus.classList.toggle('is-limited', metadata?.status !== 'ok');
+    extractStatus.querySelector('strong').textContent = metadata?.status === 'ok' ? '已提取' : '需要补充';
+    extractSummary.textContent = metadata?.status === 'ok'
+      ? `${state.images.length} 张图片 · 可继续编辑`
+      : (metadata?.status === 'login_required' ? '平台限制匿名读取' : '仅提取到公开摘要');
     if (metadata?.status === 'login_required') {
       showToast(`${metadata.platformLabel || '该平台'}限制匿名访问，可上传截图继续排版`);
     } else if (metadata?.status === 'partial') {
@@ -320,7 +455,7 @@ qs('#generate-button').addEventListener('click', async () => {
   } finally {
     updateCard();
     button.classList.remove('loading');
-    button.textContent = '生成卡片';
+    button.innerHTML = '<span>生成卡片</span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12m-4-4 4 4-4 4"/></svg>';
   }
 });
 
@@ -329,6 +464,11 @@ qs('#reset-button').addEventListener('click', () => {
   urlInput.value = defaults.url;
   titleInput.value = defaults.title;
   descriptionInput.value = defaults.description;
+  authorInput.value = defaults.author;
+  qs('#extract-status').hidden = true;
+  qs('#font-control').value = defaults.font;
+  qs('#radius-control').value = defaults.radius;
+  qs('#padding-control').value = defaults.padding;
   qsa('#ratio-control button').forEach(x => x.classList.toggle('active', x.dataset.ratio === state.ratio));
   qsa('#layout-control button').forEach(x => x.classList.toggle('active', x.dataset.layout === state.layout));
   qsa('.theme-swatch').forEach(x => x.classList.toggle('active', x.dataset.theme === state.theme));
@@ -425,22 +565,15 @@ async function downloadAutoCard() {
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
-  const backgrounds = {
-    mist: ['#ffd9c7', '#f6e4e9', '#cee7ff'],
-    cobalt: ['#284bff', '#739dff', '#d4e2ff'],
-    ink: ['#15161a', '#343741', '#6d7282'],
-    coral: ['#ef5e52', '#ffc8b7', '#ffe2d5'],
-    lime: ['#c4df48', '#e9f3a9', '#f6f7d5'],
-    paper: ['#e7dfcf', '#f2ede4', '#fbfaf6']
-  };
-  const stops = backgrounds[state.theme] || backgrounds.mist;
+  const theme = themeConfig[state.theme] || themeConfig.coastal;
+  const stops = theme.stops;
   const gradient = ctx.createLinearGradient(0, 0, width, height);
   gradient.addColorStop(0, stops[0]);
   gradient.addColorStop(.46, stops[1]);
   gradient.addColorStop(1, stops[2]);
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
-  const dark = ['cobalt', 'ink'].includes(state.theme);
+  const dark = theme.dark;
   ctx.fillStyle = dark ? 'rgba(20,21,25,.82)' : 'rgba(255,255,255,.76)';
   ctx.beginPath();
   ctx.roundRect(outer, outer, width - outer * 2, height - outer * 2, 34);
@@ -461,7 +594,7 @@ async function downloadAutoCard() {
     ctx.restore();
   }
   ctx.font = '700 22px "Microsoft YaHei", sans-serif';
-  ctx.fillText(sourceData[state.source].name, contentX + 62, y + 9);
+  ctx.fillText(state.author || sourceData[state.source].name, contentX + 62, y + 9);
   ctx.globalAlpha = .48;
   ctx.textAlign = 'right';
   ctx.font = '600 18px Arial, sans-serif';
@@ -531,22 +664,22 @@ async function downloadCard() {
   if (state.ratio === 'auto') return downloadAutoCard();
   const sizes = { square: [1080,1080], wide: [1600,900], portrait: [1080,1350] };
   const [width, height] = sizes[state.ratio];
-  const colors = { cobalt:'#2251ff', ink:'#15161a', coral:'#ef5e52', lime:'#c4df48', paper:'#eee9dd', mist:'#f7eef5' };
-  const light = ['lime','paper','mist'].includes(state.theme);
+  const theme = themeConfig[state.theme] || themeConfig.coastal;
+  const light = !theme.dark;
   const canvas = document.createElement('canvas');
   canvas.width = width; canvas.height = height;
   const ctx = canvas.getContext('2d');
-  if (state.theme === 'mist') {
-    const gradient = ctx.createLinearGradient(0,0,width,height);
-    gradient.addColorStop(0,'#fff0f2'); gradient.addColorStop(.46,'#f7f0fb'); gradient.addColorStop(1,'#d5effb');
-    ctx.fillStyle = gradient;
-  } else ctx.fillStyle = colors[state.theme];
+  const gradient = ctx.createLinearGradient(0,0,width,height);
+  gradient.addColorStop(0, theme.stops[0]);
+  gradient.addColorStop(.46, theme.stops[1]);
+  gradient.addColorStop(1, theme.stops[2]);
+  ctx.fillStyle = gradient;
   ctx.fillRect(0,0,width,height);
   const pad = Math.round(width * .06);
   ctx.fillStyle = light ? '#111216' : '#ffffff';
   ctx.textBaseline = 'top';
   ctx.font = `600 ${Math.round(width*.017)}px Arial, sans-serif`;
-  ctx.fillText(sourceData[state.source].name, pad, pad);
+  ctx.fillText(state.author || sourceData[state.source].name, pad, pad);
   ctx.globalAlpha = .72;
   ctx.textAlign = 'right'; ctx.fillText('CARD / 01', width-pad, pad); ctx.textAlign = 'left'; ctx.globalAlpha = 1;
   let image;

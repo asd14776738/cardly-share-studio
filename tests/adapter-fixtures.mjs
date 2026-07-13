@@ -70,6 +70,11 @@ globalThis.fetch = async input => {
   if (url.startsWith('https://movie.douban.com/subject/1292052/')) return html(`
     <meta property="og:title" content="豆瓣电影标题"><meta property="og:image" content="https://img1.doubanio.com/poster.jpg">
     <span property="v:summary">豆瓣条目简介</span><a rel="v:directedBy">导演甲</a>`);
+  if (url.startsWith('https://www.douyin.com/video/789')) return html('<title>在抖音记录美好生活 - 抖音</title>');
+  if (url.startsWith('https://www.iesdouyin.com/share/video/789/')) {
+    const router = { loaderData: { page: { videoInfoRes: { filter_list: [{ aweme_id: '789', filter_reason: 'author_invalid&status_audit_self_see' }], item_list: [] } } } };
+    return html('<script>window._ROUTER_DATA = ' + JSON.stringify(router) + '</script>');
+  }
   if (url.startsWith('https://www.douyin.com/video/456')) return html('<title>抖音</title>');
   if (url.startsWith('https://www.iesdouyin.com/share/video/456/')) {
     const router = { loaderData: { page: { videoInfoRes: { item_list: [{ aweme_id: '456', desc: '抖音分享页正文', author: { nickname: '分享页作者' }, video: { cover: { url_list: ['https://p3.douyinpic.com/share-cover.jpg'] } } }] } } } };
@@ -116,6 +121,7 @@ const cases = [
   ['豆瓣移动图书', 'https://m.douban.com/book/subject/1084336/', { platform: 'douban', strategy: 'douban-rexxar-api', title: '豆瓣图书标题', author: '作者乙', images: 1 }],
   ['抖音短链', 'https://v.douyin.com/short123', { platform: 'douyin', strategy: 'douyin-render-data', title: '抖音正文', author: '抖音作者', images: 1 }],
   ['抖音分享页', 'https://www.douyin.com/video/456', { platform: 'douyin', strategy: 'douyin-share-router-data', title: '抖音分享页正文', author: '分享页作者', images: 1 }],
+  ['抖音受限作品', 'https://www.douyin.com/video/789', { platform: 'douyin', strategy: 'douyin-restricted', title: '抖音作品暂不可访问', images: 0, status: 'unavailable' }],
 ];
 
 for (const [name, url, expected] of cases) {
@@ -124,9 +130,10 @@ for (const [name, url, expected] of cases) {
   assert.equal(result.strategy, expected.strategy, name + ' strategy');
   if (expected.title) assert.equal(result.title, expected.title, name + ' title');
   if (expected.author) assert.equal(result.author, expected.author, name + ' author');
+  if (expected.status) assert.equal(result.status, expected.status, name + ' status');
   assert.equal(result.imageCount, expected.images, name + ' image count');
   assert.ok(Number.isInteger(result.readingMinutes) && result.readingMinutes >= 1, name + ' reading minutes');
   if (expected.minutes) assert.equal(result.readingMinutes, expected.minutes, name + ' source reading minutes');
-  assert.ok(result.description || name === '即刻', name + ' description');
+  assert.ok(result.description || name === '即刻' || expected.status === 'unavailable', name + ' description');
   console.log('PASS', name, result.strategy, result.imageCount);
 }

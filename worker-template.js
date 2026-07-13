@@ -653,6 +653,12 @@ async function extractDouyin(target, requestUrl) {
   let aweme = findBestObject(state, scoreAweme);
   const videoId = finalTarget.pathname.match(/\/(?:video|share\/video)\/(\d+)/i)?.[1] ||
     target.pathname.match(/\/(?:video|share\/video)\/(\d+)/i)?.[1];
+  const awemeId = value => String(value?.aweme_id || value?.awemeId || '');
+  const isRealAweme = value => Boolean(value) && scoreAweme(value) >= 8 &&
+    Boolean(value.author?.nickname || value.video || value.images) &&
+    (!videoId || !awemeId(value) || awemeId(value) === videoId);
+  if (!isRealAweme(aweme)) aweme = null;
+  let restrictedReason = '';
   if (!aweme && videoId) {
     try {
       const share = new URL('https://www.iesdouyin.com/share/video/' + videoId + '/');
@@ -665,7 +671,9 @@ async function extractDouyin(target, requestUrl) {
         /window\._ROUTER_DATA\s*=\s*([\s\S]*?)<\/script>/i,
       );
       const shareAweme = findBestObject(router, scoreAweme);
-      if (shareAweme) {
+      const restriction = findBestObject(router, value => typeof value?.filter_reason === 'string' ? 20 : 0);
+      restrictedReason = restriction?.filter_reason || '';
+      if (isRealAweme(shareAweme)) {
         state = router;
         aweme = shareAweme;
         strategy = 'douyin-share-router-data';
@@ -676,8 +684,8 @@ async function extractDouyin(target, requestUrl) {
   }
   const video = aweme?.video || {};
   return finalResult({
-    title: firstValue(aweme?.desc, meta.title),
-    description: firstValue(aweme?.desc, meta.description),
+    title: restrictedReason ? '抖音作品暂不可访问' : firstValue(aweme?.desc, meta.title),
+    description: restrictedReason ? '' : firstValue(aweme?.desc, meta.description),
     author: firstValue(aweme?.author?.nickname, aweme?.author?.unique_id, meta.author),
     images: unique([
       ...imageValues(aweme?.images),
@@ -686,10 +694,12 @@ async function extractDouyin(target, requestUrl) {
       ...imageValues(video.dynamic_cover),
       ...meta.images,
     ]),
-    strategy,
-    status: /\u9a8c\u8bc1\u7801|verify|captcha|\u767b\u5f55/i.test(meta.title + text.slice(0, 5000))
-      ? 'login_required'
-      : state && aweme ? 'ok' : 'partial',
+    strategy: restrictedReason ? 'douyin-restricted' : strategy,
+    status: restrictedReason
+      ? 'unavailable'
+      : /\u9a8c\u8bc1\u7801|verify|captcha|\u767b\u5f55/i.test(meta.title + text.slice(0, 5000))
+        ? 'login_required'
+        : state && aweme ? 'ok' : 'partial',
   }, finalTarget, requestUrl);
 }
 
