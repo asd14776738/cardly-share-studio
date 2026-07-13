@@ -312,6 +312,7 @@ body.studio-app button { cursor: pointer; }
 }
 .preview-stage .share-card.density-short .card-copy > #preview-card-description { font-size: 23px; line-height: 1.52; font-weight: 560; }
 .preview-stage .share-card.density-long .card-copy > #preview-card-description { font-size: 14px; line-height: 1.76; }
+.preview-stage .card-tags { margin-top: 12px; gap: 3px 9px; font-family: var(--ui-font); font-size: 9.5px; line-height: 1.5; letter-spacing: .01em; opacity: .5; }
 .preview-stage .card-byline {
   margin: 17px 0 0 !important;
   padding-top: 13px;

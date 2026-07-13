@@ -148,6 +148,11 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .share-card.density-short .card-copy > p { font-size: 24px; line-height: 1.48; }
 .share-card.density-medium .card-copy > p { font-size: 18px; line-height: 1.65; }
 .share-card.density-long .card-copy > p { font-size: 15.5px; line-height: 1.72; }
+.card-tags { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 13px 0 0; font-family: 'Noto Sans SC', sans-serif; font-size: 10.5px; font-weight: 650; letter-spacing: .005em; line-height: 1.5; opacity: .52; }
+.card-tags[hidden] { display: none; }
+.card-tags span { max-width: 100%; overflow-wrap: anywhere; }
+.share-card:not(.ratio-auto) .card-tags { max-height: 3em; overflow: hidden; }
+.share-card.ratio-wide .card-tags { gap: 2px 7px; margin-top: 7px; font-size: 8px; line-height: 1.35; }
 .share-card:not(.ratio-auto) .card-copy > p { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
 .share-card.ratio-square .card-copy > p { -webkit-line-clamp: 4; }
 .share-card.ratio-portrait .card-copy > p { -webkit-line-clamp: 7; }

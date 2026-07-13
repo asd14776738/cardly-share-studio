@@ -2,6 +2,7 @@ import { estimateReadingMinutes, buildKicker } from './reading-time.js';
 import { chooseMediaLayout, buildAutoMediaLayout } from './media-layout.js';
 import { buildContentPalette, summarizeImagePixels } from './palette-engine.js';
 import { formatSourceLink } from './source-link.js';
+import { mergeHashtags, splitHashtags } from './hashtags.js';
 
 const platformIcons = {
   x: 'https://cdn.simpleicons.org/x/111111',
@@ -11,7 +12,7 @@ const platformIcons = {
   zhihu: 'https://cdn.simpleicons.org/zhihu/1772F6',
   wechat: 'https://cdn.simpleicons.org/wechat/07C160',
   xiaohongshu: 'https://cdn.simpleicons.org/xiaohongshu/FF2442',
-  jike: 'https://www.google.com/s2/favicons?domain=web.okjike.com&sz=64',
+  jike: 'data:image/png;base64,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',
   netease: 'https://cdn.simpleicons.org/neteasecloudmusic/E60026',
   qqmusic: 'https://www.google.com/s2/favicons?domain=y.qq.com&sz=64',
   douban: 'https://cdn.simpleicons.org/douban/2D963D',
@@ -292,20 +293,14 @@ function renderMediaGallery() {
 }
 
 function updateCard() {
-  const density = contentDensity(state.description);
   const content = canvasContent();
+  const density = contentDensity(content.description);
   const role = titleRole(content.title);
   const mediaState = (state.images || []).some(Boolean) ? 'has-media' : 'no-media';
   const theme = state.theme === 'dynamic'
     ? state.dynamicTheme || paletteForContent()
     : themeConfig[state.theme] || themeConfig.coastal;
-  const cleanTitle = String(state.title || '').replace(/\s+/g, ' ').trim();
-  const cleanDescription = String(state.description || '').replace(/\s+/g, ' ').trim();
-  const duplicateTitle = Boolean(cleanTitle && cleanDescription && (
-    cleanTitle === cleanDescription ||
-    cleanDescription.startsWith(cleanTitle) ||
-    cleanTitle.startsWith(cleanDescription)
-  ));
+  const duplicateTitle = content.duplicateTitle;
   card.className = `share-card theme-${state.theme} ratio-${state.ratio} layout-${state.layout} source-${state.source} density-${density} title-${role} ${duplicateTitle ? 'title-duplicate' : ''} ${mediaState} font-${state.font || 'sans'}`;
   card.style.setProperty('--theme-a', theme.stops[0]);
   card.style.setProperty('--theme-b', theme.stops[1]);
@@ -315,9 +310,18 @@ function updateCard() {
   card.style.setProperty('--card-radius', `${state.radius || 0}px`);
   card.style.setProperty('--surface-pad', `${state.padding || 32}px`);
   const titleNode = qs('#preview-card-title');
-  titleNode.textContent = state.title;
-  titleNode.hidden = duplicateTitle || !cleanTitle;
-  qs('#preview-card-description').textContent = state.description;
+  titleNode.textContent = content.title;
+  titleNode.hidden = !content.title;
+  const descriptionNode = qs('#preview-card-description');
+  descriptionNode.textContent = content.description;
+  descriptionNode.hidden = !content.description;
+  const tagsNode = qs('#preview-card-tags');
+  tagsNode.replaceChildren(...content.hashtags.map(tag => {
+    const item = document.createElement('span');
+    item.textContent = tag;
+    return item;
+  }));
+  tagsNode.hidden = !content.hashtags.length;
   const sourceLabel = state.sourceLabel || sourceData[state.source].name;
   const publisherLabel = state.author || sourceLabel;
   qs('#source-name').textContent = publisherLabel;
@@ -672,8 +676,10 @@ function currentTheme() {
 }
 
 function canvasContent() {
-  const title = String(state.title || '').replace(/\s+/g, ' ').trim();
-  const description = String(state.description || '').replace(/\s+/g, ' ').trim();
+  const titleParts = splitHashtags(state.title);
+  const descriptionParts = splitHashtags(state.description);
+  const title = titleParts.text.replace(/\s+/g, ' ').trim();
+  const description = descriptionParts.text.trim();
   const duplicateTitle = Boolean(title && description && (
     title === description || description.startsWith(title) || title.startsWith(description)
   ));
@@ -681,6 +687,8 @@ function canvasContent() {
   return {
     title: duplicateTitle ? '' : title,
     description,
+    hashtags: mergeHashtags(titleParts.hashtags, descriptionParts.hashtags),
+    duplicateTitle,
     source: state.author || sourceLabel,
     byline: sourceLabel ? '来源 · ' + sourceLabel : '',
   };
