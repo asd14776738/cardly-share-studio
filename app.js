@@ -388,14 +388,14 @@ function updateCard() {
   titleNode.hidden = duplicateTitle || !cleanTitle;
   qs('#preview-card-description').textContent = state.description;
   const sourceLabel = state.sourceLabel || sourceData[state.source].name;
-  qs('#source-name').textContent = sourceLabel;
+  const publisherLabel = state.author || sourceLabel;
+  qs('#source-name').textContent = publisherLabel;
+  const sourceMeta = qs('.card-number');
+  if (sourceMeta) sourceMeta.textContent = sourceLabel;
   const byline = qs('#card-byline');
   if (byline) {
-    const sameAsSource = String(state.author || '').trim().toLowerCase() === String(sourceLabel || '').trim().toLowerCase();
-    byline.hidden = !state.author || sameAsSource;
-    byline.textContent = state.platform === 'douyin'
-      ? `发布者 · ${state.author}`
-      : `作者 · ${state.author}`;
+    byline.hidden = !sourceLabel;
+    byline.textContent = '来源 · ' + sourceLabel;
   }
   const sourceIcon = qs('#source-icon-image');
   const sourceFallback = qs('.source-brand-fallback');
@@ -403,6 +403,7 @@ function updateCard() {
   sourceIcon.hidden = !state.icon;
   sourceFallback.hidden = Boolean(state.icon);
   sourceIcon.src = state.icon || '';
+  sourceIcon.alt = sourceLabel;
   qs('#card-kicker').textContent = liveKicker();
   renderMediaGallery();
   const now = new Date();
@@ -719,15 +720,12 @@ function canvasContent() {
   const duplicateTitle = Boolean(title && description && (
     title === description || description.startsWith(title) || title.startsWith(description)
   ));
-  const source = state.sourceLabel || sourceData[state.source].name;
-  const sameAsSource = String(state.author || '').trim().toLowerCase() === String(source).trim().toLowerCase();
+  const sourceLabel = state.sourceLabel || sourceData[state.source].name;
   return {
     title: duplicateTitle ? '' : title,
     description,
-    source,
-    byline: state.author && !sameAsSource
-      ? (state.platform === 'douyin' ? '发布者' : '作者') + ' · ' + state.author
-      : '',
+    source: state.author || sourceLabel,
+    byline: sourceLabel ? '来源 · ' + sourceLabel : '',
   };
 }
 
@@ -794,7 +792,7 @@ async function downloadAutoCard() {
   ctx.globalAlpha = .48;
   ctx.textAlign = 'right';
   ctx.font = '600 18px Arial, sans-serif';
-  ctx.fillText('CARDLY / AUTO', width - contentX, y + 12);
+  ctx.fillText(state.sourceLabel || sourceData[state.source].name, width - contentX, y + 12);
   ctx.textAlign = 'left';
   ctx.globalAlpha = 1;
   y += 86;
@@ -886,7 +884,7 @@ async function downloadCard() {
   ctx.font = `600 ${Math.round(width*.017)}px Arial, sans-serif`;
   ctx.fillText(content.source, pad, pad);
   ctx.globalAlpha = .72;
-  ctx.textAlign = 'right'; ctx.fillText('CARD / 01', width-pad, pad); ctx.textAlign = 'left'; ctx.globalAlpha = 1;
+  ctx.textAlign = 'right'; ctx.fillText(state.sourceLabel || sourceData[state.source].name, width-pad, pad); ctx.textAlign = 'left'; ctx.globalAlpha = 1;
   let image;
   try { image = await loadImage(state.images?.[0] || state.image); } catch { image = null; }
   const isWide = state.ratio === 'wide';

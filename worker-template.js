@@ -779,17 +779,27 @@ async function extractDouyin(target, requestUrl) {
     } catch {}
   }
   const video = aweme?.video || {};
+  const logicalImages = value => {
+    const items = Array.isArray(value) ? value : value ? [value] : [];
+    return uniqueMedia(items.map(item => imageValues(item)[0]).filter(Boolean));
+  };
+  const imagePostMedia = logicalImages(aweme?.images);
+  const videoCover = firstValue(
+    imageValues(video.origin_cover)[0],
+    imageValues(video.cover)[0],
+    imageValues(video.dynamic_cover)[0],
+    meta.images[0],
+  );
+  const media = restrictedReason
+    ? []
+    : imagePostMedia.length
+      ? imagePostMedia
+      : videoCover ? [videoCover] : [];
   return finalResult({
     title: restrictedReason ? '抖音作品暂不可访问' : firstValue(aweme?.desc, meta.title),
     description: restrictedReason ? '' : firstValue(aweme?.desc, meta.description),
     author: firstValue(aweme?.author?.nickname, aweme?.author?.unique_id, meta.author),
-    images: unique([
-      ...imageValues(aweme?.images),
-      ...imageValues(video.cover),
-      ...imageValues(video.origin_cover),
-      ...imageValues(video.dynamic_cover),
-      ...meta.images,
-    ]),
+    images: media,
     strategy: restrictedReason ? 'douyin-restricted' : strategy,
     status: restrictedReason
       ? 'unavailable'

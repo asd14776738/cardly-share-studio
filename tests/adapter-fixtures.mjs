@@ -96,7 +96,30 @@ globalThis.fetch = async input => {
     return html('<script>window._ROUTER_DATA = ' + JSON.stringify(router) + '</script>');
   }
   if (url.startsWith('https://www.douyin.com/video/123') || url.startsWith('https://v.douyin.com/short123')) {
-    const state = encodeURIComponent(JSON.stringify({ aweme: { aweme_id: '123', desc: '抖音正文', author: { nickname: '抖音作者' }, video: { cover: { url_list: ['https://p3.douyinpic.com/cover.jpg'] } } } }));
+    const state = encodeURIComponent(JSON.stringify({ aweme: {
+      aweme_id: '123',
+      desc: '抖音正文',
+      author: { nickname: '抖音作者' },
+      video: {
+        origin_cover: { url_list: ['https://p3.douyinpic.com/origin-high.jpg', 'https://p9.douyinpic.com/origin-backup.jpg'] },
+        cover: { url_list: ['https://p3.douyinpic.com/cover.jpg'] },
+        dynamic_cover: { url_list: ['https://p3.douyinpic.com/dynamic.webp'] },
+      },
+    } }));
+    return html('<meta property="og:image" content="https://p3.douyinpic.com/meta-cover.jpg"><script id="RENDER_DATA">' + state + '</script>');
+  }
+  if (url.startsWith('https://www.douyin.com/note/321')) {
+    const state = encodeURIComponent(JSON.stringify({ aweme: {
+      aweme_id: '321',
+      desc: '抖音图文正文',
+      author: { nickname: '图文作者' },
+      images: [
+        { url_list: ['https://p3.douyinpic.com/note-1.jpg', 'https://p9.douyinpic.com/note-1-backup.jpg'] },
+        { url_list: ['https://p3.douyinpic.com/note-2.jpg', 'https://p9.douyinpic.com/note-2-backup.jpg'] },
+        { url_list: ['https://p3.douyinpic.com/note-3.jpg', 'https://p9.douyinpic.com/note-3-backup.jpg'] },
+      ],
+      video: { cover: { url_list: ['https://p3.douyinpic.com/irrelevant-cover.jpg'] } },
+    } }));
     return html('<script id="RENDER_DATA">' + state + '</script>');
   }
   if (url.startsWith('https://163cn.tv/song347230')) return html('<title>网易云短链歌曲</title><meta name=description content=网易云短链摘要><meta property=og:image content=https://p1.music.126.net/cover.jpg>');
@@ -132,7 +155,8 @@ const cases = [
   ['Instagram', 'https://www.instagram.com/reel/CODE/', { platform: 'instagram', strategy: 'instagram-embed', title: 'Instagram Post', images: 1 }],
   ['Threads', 'https://www.threads.com/@author/post/code', { platform: 'threads', strategy: 'threads-json-state', title: '@author on Threads', author: 'author', images: 1 }],
   ['豆瓣', 'https://movie.douban.com/subject/1292052/', { platform: 'douban', strategy: 'douban-rexxar-api', title: '豆瓣电影标题', author: '导演甲', images: 1 }],
-  ['抖音', 'https://www.douyin.com/video/123', { platform: 'douyin', strategy: 'douyin-render-data', title: '抖音正文', author: '抖音作者', images: 1 }],
+  ['抖音视频单封面', 'https://www.douyin.com/video/123', { platform: 'douyin', strategy: 'douyin-render-data', title: '抖音正文', author: '抖音作者', images: 1, imageIncludes: 'origin-high.jpg' }],
+  ['抖音图文全部图片', 'https://www.douyin.com/note/321', { platform: 'douyin', strategy: 'douyin-render-data', title: '抖音图文正文', author: '图文作者', images: 3 }],
   ['ChatGPT', 'https://chatgpt.com/share/shareid', { platform: 'chatgpt', strategy: 'chatgpt-shared-page', title: 'ChatGPT 分享', images: 1 }],
   ['Kimi', 'https://kimi.com/share/shareid', { platform: 'kimi', strategy: 'kimi-shared-page', title: 'Kimi 分享', images: 1 }],
   ['小红书短链', 'https://xhslink.com/a/note1', { platform: 'xiaohongshu', strategy: 'xiaohongshu-initial-state', title: '小红书标题', images: 2 }],
@@ -151,6 +175,7 @@ for (const [name, url, expected] of cases) {
   if (expected.author) assert.equal(result.author, expected.author, name + ' author');
   if (expected.status) assert.equal(result.status, expected.status, name + ' status');
   assert.equal(result.imageCount, expected.images, name + ' image count');
+  if (expected.imageIncludes) assert.ok(result.image.includes(expected.imageIncludes), name + ' preferred image');
   assert.ok(Number.isInteger(result.readingMinutes) && result.readingMinutes >= 1, name + ' reading minutes');
   if (expected.minutes) assert.equal(result.readingMinutes, expected.minutes, name + ' source reading minutes');
   assert.ok(result.description || name === '即刻' || expected.status === 'unavailable', name + ' description');
