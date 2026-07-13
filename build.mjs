@@ -4,12 +4,13 @@ await rm('dist', { recursive: true, force: true });
 await mkdir('dist/server', { recursive: true });
 await mkdir('dist/.openai', { recursive: true });
 
-const [html, css, studioCss, js, readingTime, hosting, workerTemplate] = await Promise.all([
+const [html, css, studioCss, js, readingTime, mediaLayout, hosting, workerTemplate] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('styles.css', 'utf8'),
   readFile('studio-v3.css', 'utf8'),
   readFile('app.js', 'utf8'),
   readFile('reading-time.js', 'utf8'),
+  readFile('media-layout.js', 'utf8'),
   readFile('.openai/hosting.json', 'utf8'),
   readFile('worker-template.js', 'utf8'),
 ]);
@@ -21,6 +22,7 @@ const files = {
   '/studio-v3.css': ['text/css; charset=utf-8', studioCss],
   '/app.js': ['text/javascript; charset=utf-8', js],
   '/reading-time.js': ['text/javascript; charset=utf-8', readingTime],
+  '/media-layout.js': ['text/javascript; charset=utf-8', mediaLayout],
 };
 
 const worker = workerTemplate.replace('__FILES__', JSON.stringify(files));

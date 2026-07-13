@@ -766,12 +766,13 @@ async function extractInstagram(target, requestUrl) {
   }
 
   const edges = post?.edge_sidecar_to_children?.edges || [];
-  const mediaItems = [post, ...edges.map(edge => edge?.node), ...(post?.carousel_media || [])].filter(Boolean);
-  const media = uniqueMedia(mediaItems.flatMap(item => [
+  const carouselItems = [...edges.map(edge => edge?.node), ...(post?.carousel_media || [])].filter(Boolean);
+  const mediaItems = carouselItems.length ? carouselItems : [post].filter(Boolean);
+  const media = uniqueMedia(mediaItems.map(item => firstValue(
     item.display_url,
+    item.image_versions2?.candidates?.[0]?.url,
     item.thumbnail_src,
-    ...imageValues(item.image_versions2?.candidates),
-  ]));
+  )));
   const embedCaption = text.match(/<div[^>]+class=["'][^"']*\bCaption\b[^"']*["'][^>]*>([\s\S]*?)(?=<div[^>]+class=["'][^"']*CaptionComments|<\/div>)/i)?.[1] || '';
   const rawCaption = firstValue(
     post?.caption?.text,

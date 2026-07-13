@@ -1,4 +1,5 @@
 import { estimateReadingMinutes, buildKicker } from './reading-time.js';
+import { chooseMediaLayout, buildAutoMediaLayout } from './media-layout.js';
 
 const platformIcons = {
   x: 'https://cdn.simpleicons.org/x/111111',
@@ -342,21 +343,33 @@ function liveKicker() {
   });
 }
 
+function applyMediaGalleryLayout(gallery) {
+  const images = [...gallery.querySelectorAll('img')];
+  if (!images.length || images.some(image => !image.complete || !image.naturalWidth)) return;
+  const layout = chooseMediaLayout(images);
+  gallery.className = `media-gallery media-count-${Math.min(images.length, 4)} gallery-layout-${layout.type}`;
+  gallery.classList.toggle('gallery-portrait', layout.portrait);
+  gallery.style.setProperty('--gallery-columns', layout.columns);
+  const orderByIndex = new Map(layout.orderedIndices.map((index, order) => [index, order + 1]));
+  images.forEach((image, index) => {
+    image.classList.toggle('media-hero', index === layout.heroIndex);
+    image.style.order = orderByIndex.get(index);
+  });
+}
+
 function renderMediaGallery() {
   const gallery = qs('#media-gallery');
   const images = (state.images || []).filter(Boolean).slice(0, 12);
   gallery.className = `media-gallery media-count-${Math.min(images.length, 4)}`;
   gallery.replaceChildren();
   if (!images.length) return;
-  let tallCount = 0;
   images.forEach((src, index) => {
     const image = document.createElement('img');
     image.crossOrigin = src.startsWith('data:') ? null : 'anonymous';
     image.src = src;
     image.alt = `内容图片 ${index + 1}`;
     image.addEventListener('load', () => {
-      if (image.naturalHeight / image.naturalWidth > 1.25) tallCount += 1;
-      gallery.classList.toggle('is-tall', tallCount > 0);
+      applyMediaGalleryLayout(gallery);
       if (index === 0 && state.colorMode === 'auto') sampleImagePalette(image, src);
     }, { once: true });
     gallery.appendChild(image);
@@ -748,6 +761,26 @@ function canvasContent() {
   };
 }
 
+function drawCanvasMedia(ctx, image, cell, radius = 16) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(cell.x, cell.y, cell.width, cell.height, radius);
+  ctx.clip();
+  const scale = cell.fit === 'contain'
+    ? Math.min(cell.width / image.width, cell.height / image.height)
+    : Math.max(cell.width / image.width, cell.height / image.height);
+  const drawWidth = image.width * scale;
+  const drawHeight = image.height * scale;
+  ctx.drawImage(
+    image,
+    cell.x + (cell.width - drawWidth) / 2,
+    cell.y + (cell.height - drawHeight) / 2,
+    drawWidth,
+    drawHeight,
+  );
+  ctx.restore();
+}
+
 async function downloadAutoCard() {
   const width = 1080;
   const outer = 38;
@@ -767,8 +800,8 @@ async function downloadAutoCard() {
   measure.font = `500 ${bodyFont}px "Microsoft YaHei", sans-serif`;
   const bodyLines = canvasLines(measure, content.description, contentW);
   const loadedImages = (await Promise.all((state.images || []).slice(0, 12).map(src => loadImage(src).catch(() => null)))).filter(Boolean);
-  const imageHeights = loadedImages.map(image => Math.min(640, Math.max(260, Math.round(contentW * image.height / image.width))));
-  const mediaHeight = imageHeights.reduce((sum, value) => sum + value, 0) + Math.max(0, imageHeights.length - 1) * 18;
+  const mediaLayout = buildAutoMediaLayout(loadedImages, contentW, 18);
+  const mediaHeight = mediaLayout.height;
   const titleGap = titleLines.length ? 24 : 0;
   const bylineHeight = content.byline ? 50 : 0;
   const contentHeight = 86 + 36 + titleLines.length * titleLine + titleGap + bodyLines.length * bodyLine + bylineHeight + (mediaHeight ? 38 + mediaHeight : 0) + 110;
@@ -836,20 +869,14 @@ async function downloadAutoCard() {
     y += 32;
   }
   if (loadedImages.length) y += 38;
-  for (let index = 0; index < loadedImages.length; index += 1) {
-    const image = loadedImages[index];
-    const imageHeight = imageHeights[index];
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(contentX, y, contentW, imageHeight, 20);
-    ctx.clip();
-    const scale = Math.max(contentW / image.width, imageHeight / image.height);
-    const sw = contentW / scale;
-    const sh = imageHeight / scale;
-    ctx.drawImage(image, (image.width - sw) / 2, (image.height - sh) / 2, sw, sh, contentX, y, contentW, imageHeight);
-    ctx.restore();
-    y += imageHeight + 18;
+  for (const cell of mediaLayout.cells) {
+    drawCanvasMedia(ctx, loadedImages[cell.index], {
+      ...cell,
+      x: contentX + cell.x,
+      y: y + cell.y,
+    });
   }
+  y += mediaHeight;
   const footerY = height - outer - surfacePad - 48;
   ctx.globalAlpha = .42;
   ctx.strokeStyle = dark ? '#fff' : '#17181b';

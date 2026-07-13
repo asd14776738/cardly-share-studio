@@ -498,16 +498,49 @@ body.studio-app button { cursor: pointer; }
   opacity: .72;
 }
 .preview-stage .share-card.ratio-auto .media-gallery {
-  grid-template-columns: 1fr !important;
   margin-top: 18px;
-  gap: 10px;
+  gap: 8px;
+  display: grid;
 }
 .preview-stage .share-card.ratio-auto .media-gallery img {
   width: 100%;
   height: auto !important;
   max-height: none !important;
+  object-fit: cover !important;
+  border-radius: 8px;
+}
+.preview-stage .share-card.ratio-auto .gallery-layout-single {
+  grid-template-columns: 1fr !important;
+}
+.preview-stage .share-card.ratio-auto .gallery-layout-single img {
   aspect-ratio: auto !important;
   object-fit: contain !important;
+}
+.preview-stage .share-card.ratio-auto .gallery-layout-pair,
+.preview-stage .share-card.ratio-auto .gallery-layout-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+.preview-stage .share-card.ratio-auto .gallery-layout-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+.preview-stage .share-card.ratio-auto .gallery-layout-pair img,
+.preview-stage .share-card.ratio-auto .gallery-layout-grid-2 img,
+.preview-stage .share-card.ratio-auto .gallery-layout-grid-3 img {
+  aspect-ratio: 1 !important;
+}
+.preview-stage .share-card.ratio-auto .gallery-portrait:not(.gallery-layout-featured) img {
+  aspect-ratio: 4 / 5 !important;
+}
+.preview-stage .share-card.ratio-auto .gallery-layout-featured {
+  grid-template-columns: repeat(var(--gallery-columns, 2), minmax(0, 1fr)) !important;
+}
+.preview-stage .share-card.ratio-auto .gallery-layout-featured img:not(.media-hero) {
+  aspect-ratio: 1 !important;
+}
+.preview-stage .share-card.ratio-auto .gallery-layout-featured .media-hero {
+  grid-column: 1 / -1;
+  width: 100%;
+  aspect-ratio: 3 / 1 !important;
 }
 .preview-stage .card-footer {
   margin-top: 28px;

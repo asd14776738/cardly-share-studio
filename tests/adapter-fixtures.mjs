@@ -99,7 +99,9 @@ globalThis.fetch = async input => {
   if (url.startsWith('https://www.instagram.com/reel/CODE2/embed/captioned/')) return new Response('', { status: 403 });
   if (url.startsWith('https://www.instagram.com/reel/CODE2/embed/')) return html('<title>Log in • Instagram</title>');
   if (url.startsWith('https://www.instagram.com/reel/CODE2/')) return html(`
-    <script data-sjs>{"post":{"shortcode":"CODE2","caption":{"text":"Instagram fallback caption"},"owner":{"username":"fallback_author"},"video_view_count":45678,"display_url":"https://scontent.cdninstagram.com/fallback.jpg"}}</script>`);
+    <script data-sjs>{"post":{"shortcode":"CODE2","caption":{"text":"Instagram fallback caption"},"owner":{"username":"fallback_author"},"video_view_count":45678,"display_url":"https://scontent.cdninstagram.com/fallback.jpg","thumbnail_src":"https://scontent.cdninstagram.com/fallback-thumb.jpg","image_versions2":{"candidates":[{"url":"https://scontent-alt.cdninstagram.com/fallback-candidate.jpg"}]}}}</script>`);
+  if (url.startsWith('https://www.instagram.com/p/DUPLICATE/embed/captioned/')) return html(`
+    <script data-sjs>{"post":{"shortcode":"DUPLICATE","caption":{"text":"Number 9, Kel’el Ware."},"owner":{"username":"bucks"},"display_url":"https://scontent-parent.cdninstagram.com/ware-parent.jpg","edge_sidecar_to_children":{"edges":[{"node":{"id":"media-1","display_url":"https://scontent-a.cdninstagram.com/ware.jpg","thumbnail_src":"https://scontent-b.cdninstagram.com/ware-thumb.jpg"}},{"node":{"id":"media-2","display_url":"https://scontent-a.cdninstagram.com/second.jpg"}}]}}}</script>`);
   if (url.startsWith('https://www.instagram.com/reel/CODE/embed/captioned/')) return html(`
     <meta property="og:title" content="Instagram Post">
     <meta property="og:description" content="Instagram 正文">
@@ -178,6 +180,7 @@ const cases = [
   ['Weibo metadata fallback', 'https://weibo.com/user/fallbackid', { platform: 'weibo', strategy: 'weibo-login-wall', title: 'Fallback Weibo Post', images: 1, status: 'partial' }],
   ['Xiaohongshu single body image', 'https://www.xiaohongshu.com/discovery/item/note-single', { platform: 'xiaohongshu', strategy: 'xiaohongshu-initial-state', title: 'Single image note', images: 1, imageIncludes: 'post-default.jpg' }],
   ['Instagram script fallback', 'https://www.instagram.com/reel/CODE2/', { platform: 'instagram', strategy: 'instagram-json-state', title: '@fallback_author on Instagram', author: 'fallback_author', images: 1, metricType: 'views', metricCount: 45678 }],
+  ['Instagram 轮播容器不重复首图', 'https://www.instagram.com/p/DUPLICATE/', { platform: 'instagram', strategy: 'instagram-json-state', title: '@bucks on Instagram', author: 'bucks', images: 2, imageIncludes: 'ware.jpg' }],
   ['Instagram 十六进制实体解码', 'https://www.instagram.com/p/DacpRzeMiMA/', { platform: 'instagram', strategy: 'instagram-embed', title: '@rocketstur on Instagram', author: 'rocketstur', descriptionIncludes: 'Şengün fırtınası', descriptionExcludes: ['&#x', 'View all 37 comments'], images: 1, imageIncludes: 'full.jpg' }],
   ['即刻公开帖子接口', 'https://web.okjike.com/u/A7FF9DED-2FC3-4AC1-A392-92A697DF718B/post/6a54a28d54aae0885e7b2e35', { platform: 'jike', strategy: 'jike-public-api', title: '今日小确幸', author: '漆蝶', descriptionIncludes: '随机赚了笔', images: 1, imageIncludes: 'FiyLAFULL.jpg', metricType: 'likes', metricCount: 50 }],
 
