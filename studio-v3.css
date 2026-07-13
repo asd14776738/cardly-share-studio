@@ -557,7 +557,7 @@ body.studio-app button { cursor: pointer; }
   margin-top: 28px;
   padding-top: 15px;
   border-color: color-mix(in srgb,currentColor 22%,transparent);
-  opacity: .62;
+  opacity: .78;
 }
 .preview-stage .footer-meta strong { font-size: 10px; }
 .preview-stage .qr-code { width: 34px; height: 34px; opacity: .78; }

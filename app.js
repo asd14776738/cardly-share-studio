@@ -1,5 +1,7 @@
 import { estimateReadingMinutes, buildKicker } from './reading-time.js';
 import { chooseMediaLayout, buildAutoMediaLayout } from './media-layout.js';
+import { buildContentPalette, summarizeImagePixels } from './palette-engine.js';
+import { formatSourceLink } from './source-link.js';
 
 const platformIcons = {
   x: 'https://cdn.simpleicons.org/x/111111',
@@ -41,7 +43,8 @@ function iconForUrl(value) {
   if (host === 'threads.com' || host.endsWith('.threads.com') || host === 'threads.net' || host.endsWith('.threads.net')) return platformIcons.threads;
   if (host === 'chatgpt.com' || host === 'chat.openai.com') return platformIcons.chatgpt;
   if (host === 'kimi.com' || host.endsWith('.kimi.com') || host === 'kimi.moonshot.cn') return platformIcons.kimi;
-  return new URL('/favicon.ico', parsed.origin).href;
+  const favicon = new URL('/favicon.ico', parsed.origin).href;
+  return '/api/image?url=' + encodeURIComponent(favicon);
 }
 
 const defaults = {
@@ -151,6 +154,7 @@ const themeConfig = {
 };
 
 const state = { ...defaults, images: [...defaults.images] };
+state.imageColors = {};
 const qs = (selector) => document.querySelector(selector);
 const qsa = (selector) => [...document.querySelectorAll(selector)];
 const card = qs('#share-card');
@@ -172,88 +176,14 @@ function extractUrlFromShare(value) {
   return match ? match[0].replace(/[)\]】）]+$/, '') : '';
 }
 
-const semanticPalettes = [
-  { test: /海|湖|雨|天空|蓝|旅行|岛|风景|ocean|sea|sky|travel/i, hue: 198, name: '海岸蓝' },
-  { test: /树|森林|植物|花园|自然|春|露营|green|nature|forest/i, hue: 142, name: '林间绿' },
-  { test: /食|餐|咖啡|烘焙|甜|火锅|晚餐|food|coffee|cake/i, hue: 28, name: '烟火橙' },
-  { test: /爱|浪漫|花|温柔|婚礼|rose|love|romance/i, hue: 346, name: '花影粉' },
-  { test: /科技|AI|代码|产品|数字|未来|design|tech|code/i, hue: 224, name: '数码蓝' },
-  { test: /艺术|展览|电影|摄影|音乐|书|诗|art|film|music|book/i, hue: 278, name: '艺文紫' },
-  { test: /复古|历史|建筑|城市|街道|胶片|vintage|architecture/i, hue: 38, name: '旧城金' },
-];
-
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
-
-function textHash(value) {
-  let hash = 2166136261;
-  for (const char of String(value || '')) {
-    hash ^= char.codePointAt(0);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-function hsl(hue, saturation, lightness) {
-  const normalized = ((Math.round(hue) % 360) + 360) % 360;
-  return `hsl(${normalized} ${Math.round(saturation)}% ${Math.round(lightness)}%)`;
-}
-
-function rgbToHsl(red, green, blue) {
-  const r = red / 255;
-  const g = green / 255;
-  const b = blue / 255;
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const lightness = (max + min) / 2;
-  let hue = 0;
-  let saturation = 0;
-  if (max !== min) {
-    const delta = max - min;
-    saturation = lightness > .5 ? delta / (2 - max - min) : delta / (max + min);
-    if (max === r) hue = (g - b) / delta + (g < b ? 6 : 0);
-    else if (max === g) hue = (b - r) / delta + 2;
-    else hue = (r - g) / delta + 4;
-    hue *= 60;
-  }
-  return { hue, saturation: saturation * 100, lightness: lightness * 100 };
-}
-
 function paletteForContent() {
-  const text = `${state.title || ''} ${state.description || ''}`.trim();
-  const rule = semanticPalettes.find(item => item.test.test(text));
-  const hash = textHash(text || state.url || state.platform);
-  const sampled = state.imageColor;
-  const hue = sampled && sampled.saturation > 12
-    ? sampled.hue
-    : rule ? rule.hue + ((hash % 17) - 8) : hash % 360;
-  const saturation = clamp(sampled?.saturation || (rule ? 48 : 38), 30, 64);
-  const isDark = /夜|黑|深夜|宇宙|星空|霓虹|night|dark|space/i.test(text);
-  const warmShift = /温暖|阳光|夏|秋|美食|咖啡|sun|warm/i.test(text) ? 12 : 0;
-  const baseHue = hue + warmShift;
-  const stops = isDark
-    ? [
-        hsl(baseHue, saturation * .72, 15),
-        hsl(baseHue + 20, saturation * .58, 27),
-        hsl(baseHue - 28, saturation * .5, 44),
-      ]
-    : [
-        hsl(baseHue, saturation * .72, 77),
-        hsl(baseHue + 22, saturation * .48, 91),
-        hsl(baseHue - 34, saturation * .62, 84),
-      ];
-  const reason = sampled && sampled.saturation > 12
-    ? '取自正文图片与文字'
-    : rule ? `识别到“${rule.name}”语义` : '根据正文实时生成';
-  return {
-    name: rule?.name || '内容色谱',
-    stops,
-    surface: isDark ? 'rgba(15,18,23,.82)' : 'rgba(255,255,255,.86)',
-    text: isDark ? '#f7f7f4' : '#1b1d20',
-    dark: isDark,
-    reason,
-  };
+  return buildContentPalette({
+    title: state.title,
+    description: state.description,
+    url: state.url,
+    platform: state.platform,
+    imageColors: Object.values(state.imageColors || {}).filter(Boolean),
+  });
 }
 
 function syncPalettePreview(palette) {
@@ -284,36 +214,18 @@ function schedulePaletteRefresh() {
 }
 
 function sampleImagePalette(image, src) {
-  if (state.sampledImageSrc === src) return;
+  if (Object.prototype.hasOwnProperty.call(state.imageColors || {}, src)) return;
   try {
     const canvas = document.createElement('canvas');
-    canvas.width = 28;
-    canvas.height = 28;
+    canvas.width = 36;
+    canvas.height = 36;
     const context = canvas.getContext('2d', { willReadFrequently: true });
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
-    let red = 0;
-    let green = 0;
-    let blue = 0;
-    let weight = 0;
-    for (let index = 0; index < pixels.length; index += 4) {
-      if (pixels[index + 3] < 180) continue;
-      const sum = pixels[index] + pixels[index + 1] + pixels[index + 2];
-      if (sum > 735 || sum < 24) continue;
-      const max = Math.max(pixels[index], pixels[index + 1], pixels[index + 2]);
-      const min = Math.min(pixels[index], pixels[index + 1], pixels[index + 2]);
-      const chroma = Math.max(12, max - min);
-      red += pixels[index] * chroma;
-      green += pixels[index + 1] * chroma;
-      blue += pixels[index + 2] * chroma;
-      weight += chroma;
-    }
-    if (!weight) return;
-    state.sampledImageSrc = src;
-    state.imageColor = rgbToHsl(red / weight, green / weight, blue / weight);
-    refreshContentPalette();
+    state.imageColors = { ...(state.imageColors || {}), [src]: summarizeImagePixels(pixels) };
+    schedulePaletteRefresh();
   } catch {
-    state.sampledImageSrc = src;
+    state.imageColors = { ...(state.imageColors || {}), [src]: null };
   }
 }
 
@@ -361,6 +273,8 @@ function applyMediaGalleryLayout(gallery) {
 function renderMediaGallery() {
   const gallery = qs('#media-gallery');
   const images = (state.images || []).filter(Boolean).slice(0, 12);
+  const activeSources = new Set(images);
+  state.imageColors = Object.fromEntries(Object.entries(state.imageColors || {}).filter(([src]) => activeSources.has(src)));
   gallery.className = `media-gallery media-count-${Math.min(images.length, 4)}`;
   gallery.replaceChildren();
   if (!images.length) return;
@@ -371,7 +285,7 @@ function renderMediaGallery() {
     image.alt = `内容图片 ${index + 1}`;
     image.addEventListener('load', () => {
       applyMediaGalleryLayout(gallery);
-      if (index === 0 && state.colorMode === 'auto') sampleImagePalette(image, src);
+      sampleImagePalette(image, src);
     }, { once: true });
     gallery.appendChild(image);
   });
@@ -417,9 +331,13 @@ function updateCard() {
   const sourceIcon = qs('#source-icon-image');
   const sourceFallback = qs('.source-brand-fallback');
   sourceFallback.textContent = sourceData[state.source].icon;
-  sourceIcon.hidden = !state.icon;
-  sourceFallback.hidden = Boolean(state.icon);
-  sourceIcon.src = state.icon || '';
+  const nextIcon = state.icon || '';
+  const sameIcon = sourceIcon.getAttribute('src') === nextIcon;
+  const iconFailed = sameIcon && sourceIcon.complete && !sourceIcon.naturalWidth;
+  sourceIcon.hidden = !nextIcon || iconFailed;
+  sourceFallback.hidden = !sourceIcon.hidden;
+  sourceIcon.crossOrigin = 'anonymous';
+  if (!sameIcon) sourceIcon.src = nextIcon;
   sourceIcon.alt = sourceLabel;
   qs('#card-kicker').textContent = liveKicker();
   renderMediaGallery();
@@ -427,6 +345,16 @@ function updateCard() {
   const time = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
   const date = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
   qs('#footer-date').textContent = `${time} · ${date}`;
+  const sourceLink = formatSourceLink(state.url);
+  const footerSourceLink = qs('#footer-source-link');
+  const footerArrowLink = qs('#footer-arrow-link');
+  const footerSourceUrl = qs('#footer-source-url');
+  footerSourceLink.hidden = !sourceLink.href;
+  footerSourceLink.href = sourceLink.href || '#';
+  footerSourceLink.setAttribute('aria-label', sourceLink.display ? `阅读原文：${sourceLink.display}` : '阅读原文');
+  footerArrowLink.href = sourceLink.href || '#';
+  footerArrowLink.hidden = !sourceLink.href;
+  footerSourceUrl.textContent = sourceLink.display;
   qs('#char-count').textContent = `${state.description.length} 字 · ${density === 'short' ? '短内容' : density === 'medium' ? '中等内容' : '长内容'}`;
   qs('#image-count').textContent = state.images?.length ? `${state.images.length} 张图片 · 自动排列` : '可多选，自动排列';
   qs('#canvas-size').textContent = state.ratio === 'auto' ? '1080 × 自动高度' : state.ratio === 'wide' ? '1600 × 900' : state.ratio === 'portrait' ? '1080 × 1350' : '1080 × 1080';
@@ -452,8 +380,7 @@ function selectSource(source, applyPreset = true) {
     state.metricCount = null;
     state.image = sourceData[source].image;
     state.images = [sourceData[source].image];
-    state.imageColor = null;
-    state.sampledImageSrc = '';
+    state.imageColors = {};
     state.icon = sourceData[source].iconUrl;
     state.author = sourceData[source].name;
     authorInput.value = state.author;
@@ -547,8 +474,7 @@ qs('#image-upload').addEventListener('change', async event => {
     reader.readAsDataURL(file);
   })));
   state.image = state.images[0];
-  state.imageColor = null;
-  state.sampledImageSrc = '';
+  state.imageColors = {};
   refreshContentPalette();
   showToast(`已载入 ${state.images.length} 张图片，版式已自动调整`);
 });
@@ -575,8 +501,7 @@ qs('#generate-button').addEventListener('click', async () => {
   state.icon = iconForUrl(value);
   state.image = '';
   state.images = [];
-  state.imageColor = null;
-  state.sampledImageSrc = '';
+  state.imageColors = {};
   const host = new URL(value).hostname.replace(/^www\./, '').toUpperCase();
   sourceData[state.source].name = host;
   state.title = host;
@@ -632,8 +557,7 @@ qs('#generate-button').addEventListener('click', async () => {
     if (extractedImages.length) {
       state.images = [...new Set(extractedImages)].slice(0, 12);
       state.image = state.images[0];
-      state.imageColor = null;
-      state.sampledImageSrc = '';
+      state.imageColors = {};
     }
     if (metadata?.platformLabel) sourceData[state.source].name = metadata.platformLabel.toUpperCase();
     const extractStatus = qs('#extract-status');
@@ -973,5 +897,119 @@ async function downloadCard() {
   }, 'image/png');
 }
 
-qsa('[data-download]').forEach(button => button.addEventListener('click', downloadCard));
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function imageElementDataUrl(image) {
+  const source = image.currentSrc || image.src;
+  if (!source || source.startsWith('data:')) return source;
+  if (!image.complete || !image.naturalWidth) return "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
+  try {
+    const scale = Math.min(1, 1800 / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/png');
+  } catch {}
+  try {
+    const response = await fetch(source, { credentials: 'same-origin' });
+    if (!response.ok) return source;
+    return await blobToDataUrl(await response.blob());
+  } catch {
+    return source;
+  }
+}
+
+async function cloneCardForExport(element) {
+  const clone = element.cloneNode(true);
+  const sourceNodes = [element, ...element.querySelectorAll('*')];
+  const cloneNodes = [clone, ...clone.querySelectorAll('*')];
+  sourceNodes.forEach((sourceNode, index) => {
+    const cloneNode = cloneNodes[index];
+    const computed = getComputedStyle(sourceNode);
+    for (const property of computed) {
+      cloneNode.style.setProperty(property, computed.getPropertyValue(property), computed.getPropertyPriority(property));
+    }
+    cloneNode.style.animation = 'none';
+    cloneNode.style.transition = 'none';
+  });
+  const sourceImages = [...element.querySelectorAll('img')];
+  const cloneImages = [...clone.querySelectorAll('img')];
+  await Promise.all(sourceImages.map(async (image, index) => {
+    const source = await imageElementDataUrl(image);
+    if (source) cloneImages[index].src = source;
+  }));
+  return clone;
+}
+
+async function rasterizePreviewCard() {
+  await document.fonts?.ready;
+  const element = qs('#share-card');
+  const rect = element.getBoundingClientRect();
+  const sizes = { square: [1080, 1080], wide: [1600, 900], portrait: [1080, 1350] };
+  const [width, height] = state.ratio === 'auto'
+    ? [1080, Math.max(1, Math.round(1080 * rect.height / rect.width))]
+    : sizes[state.ratio];
+  const clone = await cloneCardForExport(element);
+  clone.style.width = rect.width + 'px';
+  clone.style.height = rect.height + 'px';
+  clone.style.margin = '0';
+  clone.style.transform = 'none';
+  const wrapper = document.createElement('div');
+  wrapper.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+  wrapper.style.width = rect.width + 'px';
+  wrapper.style.height = rect.height + 'px';
+  wrapper.style.margin = '0';
+  wrapper.appendChild(clone);
+  const serialized = new XMLSerializer().serializeToString(wrapper);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${rect.width}" height="${rect.height}" viewBox="0 0 ${rect.width} ${rect.height}"><foreignObject width="100%" height="100%">${serialized}</foreignObject></svg>`;
+  const svgUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  let rendered;
+  try {
+    rendered = await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error('预览栅格化失败'));
+      image.src = svgUrl;
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+    context.drawImage(rendered, 0, 0, width, height);
+    return await new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('PNG 编码失败')), 'image/png'));
+  } finally {
+    rendered = null;
+  }
+}
+
+async function downloadPreviewCard() {
+  const buttons = qsa('[data-download]');
+  buttons.forEach(button => button.disabled = true);
+  try {
+    const blob = await rasterizePreviewCard();
+    const link = document.createElement('a');
+    link.download = `cardly-${state.ratio}-${Date.now()}.png`;
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1200);
+    showToast('已按实时预览导出高清 PNG');
+  } catch (error) {
+    console.error(error);
+    showToast('导出失败，请重试');
+  } finally {
+    buttons.forEach(button => button.disabled = false);
+  }
+}
+
+qsa('[data-download]').forEach(button => button.addEventListener('click', downloadPreviewCard));
 updateCard();
