@@ -11,7 +11,7 @@ const PLATFORM_RULES = [
   ['threads', 'Threads', h => h === 'threads.net' || h.endsWith('.threads.net') || h === 'threads.com' || h.endsWith('.threads.com')],
   ['douban', '豆瓣', h => h === 'douban.com' || h.endsWith('.douban.com')],
   ['telegram', 'Telegram', h => h === 't.me' || h === 'telegram.me'],
-  ['douyin', '抖音', h => h === 'douyin.com' || h.endsWith('.douyin.com') || h === 'v.douyin.com'],
+  ['douyin', '抖音', h => h === 'douyin.com' || h.endsWith('.douyin.com') || h === 'v.douyin.com' || h === 'iesdouyin.com' || h.endsWith('.iesdouyin.com')],
   ['netease_music', '网易云音乐', h => h === 'music.163.com' || h.endsWith('.music.163.com') || h === '163cn.tv' || h.endsWith('.163cn.tv')],
   ['qq_music', 'QQ音乐', h => h === 'y.qq.com' || h.endsWith('.y.qq.com')],
   ['apple_music', 'Apple Music', h => h === 'music.apple.com'],
@@ -91,6 +91,29 @@ function uniqueMedia(values) {
 
 function firstValue(...values) {
   return values.find(value => value !== undefined && value !== null && value !== '') || '';
+}
+
+function countValue(...values) {
+  for (const value of values) {
+    if (value === undefined || value === null || value === '') continue;
+    if (typeof value === 'number' && Number.isFinite(value) && value >= 0) return Math.round(value);
+    const raw = String(value).trim().replace(/,/g, '');
+    const match = raw.match(/^([0-9]+(?:\.[0-9]+)?)\s*([kKmMwW]|\u4e07|\u4ebf)?/);
+    if (!match) continue;
+    const multipliers = { k: 1000, m: 1000000, w: 10000, '\u4e07': 10000, '\u4ebf': 100000000 };
+    const multiplier = multipliers[(match[2] || '').toLowerCase()] || 1;
+    const count = Number(match[1]) * multiplier;
+    if (Number.isFinite(count) && count >= 0) return Math.round(count);
+  }
+  return null;
+}
+
+function engagement(data) {
+  const viewCount = countValue(data.viewCount);
+  const likeCount = countValue(data.likeCount);
+  if (viewCount !== null) return { metricType: 'views', metricCount: viewCount };
+  if (likeCount !== null) return { metricType: 'likes', metricCount: likeCount };
+  return { metricType: '', metricCount: null };
 }
 
 function decodeJsString(value) {
@@ -193,6 +216,7 @@ function finalResult(data, target, requestUrl) {
   const reading = readingStats(firstValue(data.readingText, description));
   const status = data.status || (title && (description || images.length) ? 'ok' : 'partial');
   return {
+    ...engagement(data),
     ...base,
     host: target.hostname,
     title,
@@ -282,6 +306,8 @@ async function extractX(target, requestUrl) {
     description: tweet.text || '',
     author: user.screen_name ? '@' + user.screen_name : user.name,
     images: photos,
+    viewCount: firstValue(tweet.view_count, tweet.views?.count),
+    likeCount: firstValue(tweet.favorite_count, tweet.like_count),
     strategy: 'x-syndication',
   }, target, requestUrl);
 }
@@ -326,6 +352,8 @@ async function extractWeibo(target, requestUrl) {
           description: post.text_raw || post.text || '',
           author: post.user?.screen_name || '',
           images: uniqueMedia([...pictures, ...imageValues(post.page_info?.page_pic)]),
+          viewCount: firstValue(post.reads_count, post.read_count, post.view_count),
+          likeCount: firstValue(post.attitudes_count, post.like_count),
           strategy: endpoint.hostname.startsWith('m.') ? 'weibo-mobile-json' : 'weibo-public-json',
         }, target, requestUrl);
       } catch {}
@@ -353,6 +381,8 @@ async function extractWeibo(target, requestUrl) {
       title: renderedPost.user?.screen_name ? renderedPost.user.screen_name + ' \u7684\u5fae\u535a' : meta.title,
       description: firstValue(renderedPost.text_raw, renderedPost.text, meta.description),
       author: firstValue(renderedPost.user?.screen_name, meta.author),
+      viewCount: firstValue(renderedPost.reads_count, renderedPost.read_count, renderedPost.view_count),
+      likeCount: firstValue(renderedPost.attitudes_count, renderedPost.like_count),
       images: uniqueMedia([
         ...imageValues(renderedPost.pics),
         ...imageValues(renderedPost.pic_infos && Object.values(renderedPost.pic_infos)),
@@ -405,6 +435,8 @@ async function extractZhihu(target, requestUrl) {
         title,
         description: content,
         author: firstValue(author.name, author.url_token),
+        viewCount: firstValue(item.visit_count, item.view_count),
+        likeCount: firstValue(item.voteup_count, item.reaction_count),
         images: unique([
           ...imageValues(firstValue(item.image_url, item.thumbnail)),
           ...imagesFromHtml(content, target),
@@ -434,6 +466,8 @@ async function extractZhihu(target, requestUrl) {
     title: firstValue(article?.title, question?.title, best?.title, meta.title),
     description: firstValue(content, meta.description),
     author: firstValue(best?.author?.name, best?.author?.urlToken, meta.author),
+    viewCount: firstValue(best?.visitCount, best?.visit_count, question?.visitCount, question?.visit_count),
+    likeCount: firstValue(best?.voteupCount, best?.voteup_count, best?.reactionCount),
     images: unique([
       ...meta.images,
       ...imageValues(firstValue(best?.imageUrl, best?.image, best?.thumbnail)),
@@ -503,6 +537,8 @@ async function extractXiaohongshu(target, requestUrl) {
     title: firstValue(note?.title, note?.displayTitle, meta.title),
     description: firstValue(note?.desc, note?.description, meta.description),
     author: firstValue(note?.user?.nickname, note?.user?.nickName, note?.user?.name, meta.author),
+    viewCount: firstValue(note?.interactInfo?.viewCount, note?.interact_info?.view_count, note?.viewCount),
+    likeCount: firstValue(note?.interactInfo?.likedCount, note?.interact_info?.liked_count, note?.likedCount, note?.likes),
     images: media,
     strategy: isNote ? 'xiaohongshu-initial-state' : blocked ? 'xiaohongshu-login-wall' : 'xiaohongshu-metadata',
     status: blocked ? 'login_required' : 'ok',
@@ -527,6 +563,8 @@ async function extractJike(target, requestUrl) {
     title: firstValue(post?.title, creator?.screenName && creator.screenName + ' 在即刻发布', meta.title),
     description: firstValue(post?.content, post?.text, post?.description, meta.description),
     author: firstValue(creator?.screenName, creator?.username, creator?.name, meta.author),
+    viewCount: firstValue(post?.viewCount, post?.stats?.viewCount),
+    likeCount: firstValue(post?.likeCount, post?.stats?.likeCount),
     images: unique([
       ...imageValues(post?.pictures),
       ...imageValues(post?.images),
@@ -592,6 +630,7 @@ async function extractTelegram(target, requestUrl) {
     const { text } = await fetchText(embed);
     const body = text.match(/<div[^>]+class=["'][^"']*tgme_widget_message_text[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1] || '';
     const author = textOnly(text.match(/<a[^>]+class=["'][^"']*tgme_widget_message_author_name[^"']*["'][^>]*>([\s\S]*?)<\/a>/i)?.[1] || '');
+    const views = textOnly(text.match(/<span[^>]+class=["'][^"']*tgme_widget_message_views[^"']*["'][^>]*>([\s\S]*?)<\/span>/i)?.[1] || '');
     const photos = [...text.matchAll(/background-image\s*:\s*url\(['"]?([^'")]+)['"]?\)/gi)].map(match => match[1]);
     const meta = parseMeta(text, embed);
     return finalResult({
@@ -599,6 +638,7 @@ async function extractTelegram(target, requestUrl) {
       description: firstValue(body, meta.description),
       author,
       images: unique([...photos, ...meta.images]),
+      viewCount: views,
       strategy: 'telegram-embed',
     }, target, requestUrl);
   }
@@ -682,6 +722,8 @@ async function extractInstagram(target, requestUrl) {
     title: firstValue(author && '@' + author + ' on Instagram', meta.title),
     description: caption,
     author,
+    viewCount: firstValue(post?.video_view_count, post?.video_play_count, post?.view_count, post?.play_count),
+    likeCount: firstValue(post?.edge_media_preview_like?.count, post?.edge_liked_by?.count, post?.like_count),
     images: uniqueMedia([...media, ...meta.images]),
     strategy: post ? 'instagram-json-state' : code ? 'instagram-embed' : 'instagram-page',
     status: hasPublicContent
@@ -726,10 +768,17 @@ async function extractDouban(target, requestUrl) {
 }
 
 async function extractDouyin(target, requestUrl) {
-  const { response, text } = await fetchText(target, { referer: 'https://www.douyin.com/' });
+  const { response, text } = await fetchText(target, {
+    referer: 'https://www.douyin.com/',
+    'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148',
+  });
   let finalTarget = safeUrl(response.url) || target;
   let meta = parseMeta(text, finalTarget);
   const raw = text.match(/<script[^>]+id=["']RENDER_DATA["'][^>]*>([\s\S]*?)<\/script>/i)?.[1];
+  const initialRouter = parseJsonBlock(
+    text,
+    /window\._ROUTER_DATA\s*=\s*([\s\S]*?)<\/script>/i,
+  );
   let state = null;
   let strategy = 'douyin-metadata';
   if (raw) {
@@ -755,6 +804,16 @@ async function extractDouyin(target, requestUrl) {
     (!videoId || !awemeId(value) || awemeId(value) === videoId);
   if (!isRealAweme(aweme)) aweme = null;
   let restrictedReason = '';
+  if (!aweme && initialRouter) {
+    const initialAweme = findBestObject(initialRouter, scoreAweme);
+    const restriction = findBestObject(initialRouter, value => typeof value?.filter_reason === 'string' ? 20 : 0);
+    restrictedReason = restriction?.filter_reason || '';
+    if (isRealAweme(initialAweme)) {
+      state = initialRouter;
+      aweme = initialAweme;
+      strategy = 'douyin-share-router-data';
+    }
+  }
   if (!aweme && videoId) {
     try {
       const share = new URL('https://www.iesdouyin.com/share/video/' + videoId + '/');
@@ -799,13 +858,17 @@ async function extractDouyin(target, requestUrl) {
     title: restrictedReason ? '抖音作品暂不可访问' : firstValue(aweme?.desc, meta.title),
     description: restrictedReason ? '' : firstValue(aweme?.desc, meta.description),
     author: firstValue(aweme?.author?.nickname, aweme?.author?.unique_id, meta.author),
+    viewCount: firstValue(aweme?.statistics?.play_count, aweme?.statistics?.playCount, aweme?.statistics?.view_count),
+    likeCount: firstValue(aweme?.statistics?.digg_count, aweme?.statistics?.diggCount, aweme?.statistics?.like_count),
     images: media,
     strategy: restrictedReason ? 'douyin-restricted' : strategy,
     status: restrictedReason
       ? 'unavailable'
-      : /\u9a8c\u8bc1\u7801|verify|captcha|\u767b\u5f55/i.test(meta.title + text.slice(0, 5000))
-        ? 'login_required'
-        : state && aweme ? 'ok' : 'partial',
+      : state && aweme
+        ? 'ok'
+        : /\u9a8c\u8bc1\u7801|verify|captcha|\u767b\u5f55/i.test(meta.title + text.slice(0, 5000))
+          ? 'login_required'
+          : 'partial',
   }, finalTarget, requestUrl);
 }
 
@@ -842,6 +905,8 @@ async function extractThreads(target, requestUrl) {
     title: firstValue(author && '@' + author + ' on Threads', meta.title),
     description: firstValue(postText, meta.description),
     author,
+    viewCount: firstValue(post?.view_count, post?.viewCount),
+    likeCount: firstValue(post?.like_count, post?.likeCount),
     images: unique([...media, ...meta.images]),
     strategy: post ? 'threads-json-state' : 'threads-page-state',
     status: /login|log in|登录/i.test(meta.title)

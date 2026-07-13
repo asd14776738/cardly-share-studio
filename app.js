@@ -48,6 +48,8 @@ const defaults = {
   platform: 'web',
   contentStatus: 'ok',
   readingMinutes: null,
+  metricType: '',
+  metricCount: null,
   colorMode: 'auto',
   sourceLabel: 'ARCHDAILY.CN',
   ratio: 'auto',
@@ -335,13 +337,14 @@ function liveKicker() {
     status: state.contentStatus,
     readingMinutes: state.readingMinutes,
     description: state.description,
-    imageCount: (state.images || []).filter(Boolean).length,
+    metricType: state.metricType,
+    metricCount: state.metricCount,
   });
 }
 
 function renderMediaGallery() {
   const gallery = qs('#media-gallery');
-  const images = (state.images || []).filter(Boolean).slice(0, 6);
+  const images = (state.images || []).filter(Boolean).slice(0, 12);
   gallery.className = `media-gallery media-count-${Math.min(images.length, 4)}`;
   gallery.replaceChildren();
   if (!images.length) return;
@@ -431,6 +434,8 @@ function selectSource(source, applyPreset = true) {
     state.sourceLabel = sourceData[source].name;
     state.contentStatus = 'ok';
     state.readingMinutes = null;
+    state.metricType = '';
+    state.metricCount = null;
     state.image = sourceData[source].image;
     state.images = [sourceData[source].image];
     state.imageColor = null;
@@ -487,7 +492,7 @@ qs('#font-control').addEventListener('change', event => { state.font = event.tar
 qs('#radius-control').addEventListener('input', event => { state.radius = Number(event.target.value); qs('#radius-value').textContent = event.target.value; updateCard(); });
 qs('#padding-control').addEventListener('input', event => { state.padding = Number(event.target.value); qs('#padding-value').textContent = event.target.value; updateCard(); });
 
-let zoomLevel = 85;
+let zoomLevel = 90;
 function setZoom(next) {
   zoomLevel = Math.max(60, Math.min(110, next));
   card.style.setProperty('--preview-scale', zoomLevel / 100);
@@ -497,7 +502,7 @@ qs('#zoom-out').addEventListener('click', () => setZoom(zoomLevel - 5));
 qs('#zoom-in').addEventListener('click', () => setZoom(zoomLevel + 5));
 
 refreshContentPalette();
-setZoom(85);
+setZoom(90);
 
 titleInput.addEventListener('input', () => {
   state.title = titleInput.value || '输入你的标题';
@@ -511,12 +516,14 @@ authorInput.addEventListener('input', () => {
 descriptionInput.addEventListener('input', () => {
   state.description = descriptionInput.value.slice(0, 2000);
   state.readingMinutes = null;
+  state.metricType = '';
+  state.metricCount = null;
   if (descriptionInput.value !== state.description) descriptionInput.value = state.description;
   schedulePaletteRefresh();
 });
 
 qs('#image-upload').addEventListener('change', async event => {
-  const files = [...(event.target.files || [])].slice(0, 6);
+  const files = [...(event.target.files || [])].slice(0, 12);
   if (!files.length) return;
   if (files.some(file => file.size > 8 * 1024 * 1024)) return showToast('每张图片请控制在 8MB 以内');
   state.images = await Promise.all(files.map(file => new Promise((resolve, reject) => {
@@ -549,6 +556,8 @@ qs('#generate-button').addEventListener('click', async () => {
   state.platform = state.source;
   state.contentStatus = 'ok';
   state.readingMinutes = null;
+  state.metricType = '';
+  state.metricCount = null;
   state.icon = iconForUrl(value);
   state.image = '';
   state.images = [];
@@ -579,10 +588,12 @@ qs('#generate-button').addEventListener('click', async () => {
     }
     state.author = metadata?.author || metadata?.platformLabel || host;
     authorInput.value = state.author;
-    const sourceLabels = { douyin: '抖音视频', weibo: '微博', xiaohongshu: '小红书', instagram: 'Instagram', x: 'X' };
+    const sourceLabels = { douyin: '\u6296\u97f3', weibo: '微博', xiaohongshu: '小红书', instagram: 'Instagram', x: 'X' };
     state.sourceLabel = sourceLabels[state.platform] || metadata?.platformLabel || host;
     state.contentStatus = metadata?.status || 'ok';
     state.readingMinutes = Number.isFinite(metadata?.readingMinutes) ? metadata.readingMinutes : estimateReadingMinutes(metadata?.description);
+    state.metricType = metadata?.metricType === 'views' || metadata?.metricType === 'likes' ? metadata.metricType : '';
+    state.metricCount = Number.isFinite(metadata?.metricCount) ? metadata.metricCount : null;
     const accessMessage = metadata?.status === 'login_required'
       ? `${metadata.platformLabel || '该平台'}限制匿名读取，请上传截图或手动粘贴正文`
       : metadata?.status === 'unavailable'
@@ -597,7 +608,7 @@ qs('#generate-button').addEventListener('click', async () => {
       ? metadata.images.filter(Boolean)
       : (metadata?.image ? [metadata.image] : []);
     if (extractedImages.length) {
-      state.images = [...new Set(extractedImages)].slice(0, 6);
+      state.images = [...new Set(extractedImages)].slice(0, 12);
       state.image = state.images[0];
       state.imageColor = null;
       state.sampledImageSrc = '';
@@ -747,7 +758,7 @@ async function downloadAutoCard() {
   const titleLines = canvasLines(measure, content.title, contentW, role === 'headline' ? 3 : 2);
   measure.font = `500 ${bodyFont}px "Microsoft YaHei", sans-serif`;
   const bodyLines = canvasLines(measure, content.description, contentW);
-  const loadedImages = (await Promise.all((state.images || []).slice(0, 6).map(src => loadImage(src).catch(() => null)))).filter(Boolean);
+  const loadedImages = (await Promise.all((state.images || []).slice(0, 12).map(src => loadImage(src).catch(() => null)))).filter(Boolean);
   const imageHeights = loadedImages.map(image => Math.min(640, Math.max(260, Math.round(contentW * image.height / image.width))));
   const mediaHeight = imageHeights.reduce((sum, value) => sum + value, 0) + Math.max(0, imageHeights.length - 1) * 18;
   const titleGap = titleLines.length ? 24 : 0;

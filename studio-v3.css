@@ -74,7 +74,7 @@ body.studio-app button { cursor: pointer; }
   min-height: calc(100vh - 72px);
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(360px, 1fr) minmax(520px, 580px) minmax(320px, .9fr);
+  grid-template-columns: minmax(360px, 420px) minmax(620px, 1fr) minmax(340px, 400px);
   justify-content: center;
   overflow: hidden;
   border: 1px solid #d7d6d2;
@@ -86,8 +86,8 @@ body.studio-app button { cursor: pointer; }
 
 .content-panel,
 .style-panel { min-width: 0; background: var(--panel); }
-.content-panel { padding: 24px clamp(22px, 2vw, 36px) 30px; border-right: 1px solid var(--hairline); }
-.style-panel { padding: 24px clamp(20px, 1.8vw, 32px) 26px; border-left: 1px solid var(--hairline); overflow: auto; }
+.content-panel { padding: 24px clamp(20px, 1.5vw, 28px) 30px; border-right: 1px solid var(--hairline); }
+.style-panel { padding: 24px clamp(18px, 1.35vw, 26px) 26px; border-left: 1px solid var(--hairline); overflow: auto; }
 .panel-heading { min-height: 48px; margin: 0 0 17px; }
 .panel-heading h1,
 .panel-heading h2 { margin: 0; font-size: 17px; line-height: 1.35; letter-spacing: -.35px; }
@@ -199,7 +199,7 @@ body.studio-app button { cursor: pointer; }
 .upload-button { min-width: 76px; height: 34px; display: grid; place-items: center; border: 1px solid #d7d6d2; border-radius: 7px; background: #fff; font-size: 11px; }
 
 .platform-support { padding-top: 16px; }
-.platform-support > span { display: block; margin-bottom: 10px; color: #898d95; font-size: 11px; }
+.platform-support > span { display: none; }
 .platform-rail { display: flex; flex-wrap: wrap; gap: 8px; }
 .platform-chip {
   width: 22px;
@@ -255,7 +255,7 @@ body.studio-app button { cursor: pointer; }
   --theme-c: #efc8b5;
   --theme-text: #1b1d20;
   --theme-surface: rgba(255,255,255,.86);
-  width: min(100%, 442px);
+  width: min(100%, 500px);
   padding: 12px;
   border-radius: var(--card-radius);
   color: var(--theme-text);
@@ -525,6 +525,7 @@ body.studio-app button { cursor: pointer; }
 .style-section > label,
 .range-section label { font-size: 12px; }
 .platform-chip { width: 28px; height: 28px; }
+.preview-stage .card-kicker:empty { display: none; }
 .preview-stage .card-byline { font-size: 12px !important; }
 .compact-history .recent-card,
 .compact-history .recent-card > * { min-width: 0; }
@@ -536,16 +537,16 @@ body.studio-app button { cursor: pointer; }
   .compact-history .recent-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 1400px) {
-  .studio-v3 { grid-template-columns: minmax(320px,1fr) minmax(500px,560px) minmax(280px,.85fr); }
+  .studio-v3 { grid-template-columns: minmax(320px,360px) minmax(540px,1fr) minmax(300px,340px); }
 }
 @media (max-width: 1200px) {
-  .studio-v3 { grid-template-columns: 300px minmax(470px,520px) 270px; }
+  .studio-v3 { grid-template-columns: 300px minmax(500px,1fr) 280px; }
   .content-panel { padding-inline: 18px; }
   .style-panel { padding-inline: 17px; }
   .preview-stage { padding-inline: 18px; }
 }
 @media (max-width: 1060px) {
-  .studio-v3 { grid-template-columns: 280px minmax(420px,560px); }
+  .studio-v3 { grid-template-columns: 280px minmax(420px,1fr); }
   .style-panel {
     grid-column: 1 / -1;
     border: 0;
