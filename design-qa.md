@@ -1,35 +1,36 @@
-# Cardly v41 Design QA
+# Cardly v42 Design QA
 
-- source visual truth path: C:/Users/admin/AppData/Local/Temp/codex-clipboard-c4a71f4d-5392-4325-ae09-1abf87e261b9.png
-- reported failure path: C:/Users/admin/AppData/Local/Temp/codex-clipboard-02269180-9b97-4a44-8132-4b46291ea999.png
-- implementation screenshots: C:/tmp/cardly-ratio-v41-after/before-square.png; C:/tmp/cardly-ratio-v41-after/before-portrait.png; C:/tmp/cardly-ratio-v41-after/before-wide.png
-- full-view comparison evidence: C:/Users/admin/Documents/Codex/2026-07-13/cardly-sites-project-appgprj-6a51f0bacb208191b5e12b3987c0bf6e-2/ratio-comparison.jpg
-- viewport: 1440x1000 desktop and 390x844 mobile
-- state: one portrait image, fixed 1:1 / 4:5 / 16:9 canvas ratios
+- source visual truth path: C:/tmp/cardly-v42-mobile-audit/04-history.png
+- implementation screenshot paths: C:/tmp/cardly-v42-history-qa/01-empty.png; C:/tmp/cardly-v42-history-qa/02-grouped.png; C:/tmp/cardly-v42-history-qa/03-filtered.png; C:/tmp/cardly-v42-history-qa/04-desktop-grouped.png
+- viewport: 390x844 mobile and 1440x1000 desktop
+- state: empty history, grouped history, Instagram-filtered history, restored card
+- full-view comparison evidence: C:/Users/admin/Documents/Codex/2026-07-13/cardly-sites-project-appgprj-6a51f0bacb208191b5e12b3987c0bf6e-2/history-v42-before-after.jpg
+- focused region evidence: C:/Users/admin/Documents/Codex/2026-07-13/cardly-sites-project-appgprj-6a51f0bacb208191b5e12b3987c0bf6e-2/history-v42-contact.jpg
 
 ## Findings
 
-No actionable P0/P1/P2 issue remains in the fixed-ratio flow.
+No actionable P0/P1/P2 issue remains in the revised history flow.
 
-- Fonts and typography: fixed canvases now use ratio-specific title and body clamps; hierarchy remains intact without pushing the gallery out of view.
-- Spacing and layout rhythm: square and portrait canvases use explicit header/copy/media/footer grid rows. The square media region increased from 0px to 225px; portrait from 93px to 289px; wide from 105px to 127px.
-- Colors and visual tokens: the existing content-derived palette, surface opacity, border, and shadow system is unchanged.
-- Image quality and asset fidelity: single images use full-bleed cover treatment in every fixed ratio rather than contain/letterbox. Source imagery remains unchanged; only crop behavior is ratio-specific.
-- Copy and content: no app copy changed. Long text receives deterministic clamping only in fixed-size canvases.
-- Responsiveness and accessibility: all three ratios have zero horizontal overflow at 390px; controls remain in the existing mobile Style → Preview path.
+- Fonts and typography: month headings, platform chips, card titles, counts, and empty-state copy form a clear four-level hierarchy without cramped wrapping.
+- Spacing and layout rhythm: mobile uses a one-column card stack and a sticky filter row; desktop uses three columns. Month groups have consistent dividers and 24–28px separation.
+- Colors and visual tokens: filters use the existing ink/neutral tokens; saved-card thumbnails retain each card's content-derived palette.
+- Image quality and asset fidelity: history thumbnails use the original saved imagery and platform icons; no placeholder or generated visual substitutes were added.
+- Copy and content: the empty state explains persistence and offers one primary action; filtered-empty copy offers a direct route back to all works.
+- Accessibility and behavior: filter buttons expose aria-pressed, mobile targets are at least 38px, the primary empty-state target is 44px, no horizontal overflow was measured, and restored cards open the Preview panel.
 
-The focused comparison was required and performed on the card region because the defect was specifically the media allocation and crop inside fixed canvases. The broader studio shell was intentionally unchanged.
+The focused comparison was required because the change concentrates hierarchy and controls inside the history region. The rest of the editor shell was intentionally unchanged.
 
 ## Comparison history
 
-- Earlier P1: 1:1 could collapse the media gallery to 0px and all fixed ratios used contain, producing gray letterboxing and thumbnail-like imagery.
-- Fix: added ratio-specific content plans, bounded copy, explicit grid rows, minimum media regions, and cover cropping.
-- Post-fix evidence: square 225px, portrait 289px, and wide 127px media regions; all three report object-fit cover, no console errors, and no mobile overflow.
+- Earlier P2: the mobile history panel was mostly blank and offered no recovery action, grouping, or browsing controls.
+- Fix: added an explicit start CTA, platform filters, monthly grouping, count feedback, and direct restore-to-preview behavior.
+- Post-fix evidence: two month groups and four platform filters rendered from seeded history; Instagram filtering returned exactly two cards; desktop and mobile overflow remained 0px; browser errors remained 0.
 
 ## Browser verification
 
-- primary interactions: upload one portrait image → select 1:1 / 4:5 / 16:9 → open preview → export PNG
-- export dimensions: 1080x1080, 1080x1350, 1600x900
+- primary interactions: open empty History → start making → seed saved cards → filter by platform → restore card
+- page identity and meaningful content: passed
+- framework overlay: none
 - console errors checked: 0
 - Browser plugin availability: unavailable; regular Playwright used with prior user approval
 

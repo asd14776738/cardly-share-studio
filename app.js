@@ -4,6 +4,7 @@ import { buildContentPalette, summarizeImagePixels } from './palette-engine.js';
 import { formatSourceLink } from './source-link.js';
 import { mergeHashtags, splitHashtags } from './hashtags.js';
 import { HISTORY_LIMIT, createHistorySnapshot, normalizeHistoryItems, formatHistoryTime } from './history-store.js';
+import { historyFilterOptions, filterHistoryItems, groupHistoryByMonth } from './history-view.js';
 import { readActiveDraftId, writeActiveDraftId, clearActiveDraftId, saveStatusText } from './draft-session.js';
 import { loadingExtractFeedback, feedbackForMetadata, feedbackForFailure } from './extract-feedback.js';
 import { sourceInputHint, isGenerateShortcut } from './source-input.js';
@@ -178,6 +179,8 @@ const HISTORY_STORE_NAME = 'cards';
 let historyDatabasePromise = null;
 let activeHistoryId = null;
 let historyAutosaveTimer = null;
+let historyEntriesCache = [];
+let activeHistoryFilter = 'all';
 
 function draftStorage() {
   try { return window.localStorage; }
@@ -312,29 +315,96 @@ function createRecentCard(entry) {
   return button;
 }
 
-function renderHistoryEmpty(grid) {
+function historyPlatformLabel(key) {
+  return sourceData[key]?.name || ({ instagram:'Instagram', weibo:'微博', xiaohongshu:'小红书', x:'X', douyin:'抖音', telegram:'Telegram', jike:'即刻' }[key]) || '网页';
+}
+
+function renderHistoryEmpty(grid, { filtered = false } = {}) {
   const empty = document.createElement('div');
   empty.className = 'recent-empty';
   const title = document.createElement('strong');
-  title.textContent = '还没有历史作品';
+  title.textContent = filtered ? '这个平台还没有作品' : '从第一张卡片开始';
   const description = document.createElement('span');
-  description.textContent = '生成、编辑或导出后会自动保存在这里';
-  empty.append(title, description);
+  description.textContent = filtered ? '切换其他平台，或查看全部历史作品' : '粘贴一个公开链接，生成后会自动保存在这里';
+  const action = document.createElement('button');
+  action.type = 'button';
+  if (filtered) {
+    action.dataset.historyShowAll = 'true';
+    action.textContent = '查看全部';
+  } else {
+    action.dataset.historyStart = 'true';
+    action.textContent = '开始制作';
+  }
+  empty.append(title, description, action);
   grid.replaceChildren(empty);
+}
+
+function renderHistoryFilters(entries) {
+  const toolbar = qs('#history-tools');
+  const filters = qs('#history-filters');
+  const count = qs('#history-count');
+  const options = ['all', ...historyFilterOptions(entries)];
+  if (!options.includes(activeHistoryFilter)) activeHistoryFilter = 'all';
+  filters.replaceChildren(...options.map(key => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.historyFilter = key;
+    button.classList.toggle('active', key === activeHistoryFilter);
+    button.setAttribute('aria-pressed', String(key === activeHistoryFilter));
+    button.textContent = key === 'all' ? '全部' : historyPlatformLabel(key);
+    return button;
+  }));
+  const visible = filterHistoryItems(entries, activeHistoryFilter).length;
+  count.textContent = visible + ' 张卡片';
+  toolbar.hidden = false;
+}
+
+function createHistoryMonth(group) {
+  const section = document.createElement('section');
+  section.className = 'history-month';
+  const heading = document.createElement('div');
+  heading.className = 'history-month-heading';
+  const title = document.createElement('h3');
+  title.textContent = group.label;
+  const count = document.createElement('span');
+  count.textContent = group.items.length + ' 张';
+  heading.append(title, count);
+  const cards = document.createElement('div');
+  cards.className = 'history-month-grid';
+  cards.replaceChildren(...group.items.map(createRecentCard));
+  section.append(heading, cards);
+  return section;
+}
+
+function renderHistoryCollection(grid) {
+  const visibleEntries = filterHistoryItems(historyEntriesCache, activeHistoryFilter);
+  grid.classList.toggle('is-empty', !visibleEntries.length);
+  qs('#history-count').textContent = visibleEntries.length + ' 张卡片';
+  if (!visibleEntries.length) return renderHistoryEmpty(grid, { filtered: historyEntriesCache.length > 0 });
+  grid.replaceChildren(...groupHistoryByMonth(visibleEntries).map(createHistoryMonth));
 }
 
 async function renderRecentHistory() {
   const grid = qs('#recent-grid');
   const clearButton = qs('#clear-recent');
+  const toolbar = qs('#history-tools');
   try {
     const entries = normalizeHistoryItems(await historyGetAll());
-    grid.classList.toggle('is-empty', !entries.length);
+    historyEntriesCache = entries;
     clearButton.hidden = !entries.length;
-    if (!entries.length) return renderHistoryEmpty(grid);
-    grid.replaceChildren(...entries.map(createRecentCard));
+    toolbar.hidden = !entries.length;
+    if (!entries.length) {
+      activeHistoryFilter = 'all';
+      grid.classList.add('is-empty');
+      return renderHistoryEmpty(grid);
+    }
+    renderHistoryFilters(entries);
+    renderHistoryCollection(grid);
   } catch {
+    historyEntriesCache = [];
     grid.classList.add('is-empty');
     clearButton.hidden = true;
+    toolbar.hidden = true;
     renderHistoryEmpty(grid);
   }
 }
@@ -950,8 +1020,29 @@ qs('#extract-actions').addEventListener('click', event => {
 });
 
 qs('#recent-grid').addEventListener('click', event => {
+  const startButton = event.target.closest('[data-history-start]');
+  if (startButton) {
+    setMobilePanel('content');
+    requestAnimationFrame(() => { urlInput.focus(); urlInput.scrollIntoView({ block:'center', behavior:'smooth' }); });
+    return;
+  }
+  const showAllButton = event.target.closest('[data-history-show-all]');
+  if (showAllButton) {
+    activeHistoryFilter = 'all';
+    renderHistoryFilters(historyEntriesCache);
+    renderHistoryCollection(qs('#recent-grid'));
+    return;
+  }
   const cardButton = event.target.closest('[data-history-id]');
   if (cardButton) void restoreHistoryEntry(cardButton.dataset.historyId);
+});
+
+qs('#history-filters').addEventListener('click', event => {
+  const button = event.target.closest('[data-history-filter]');
+  if (!button) return;
+  activeHistoryFilter = button.dataset.historyFilter;
+  renderHistoryFilters(historyEntriesCache);
+  renderHistoryCollection(qs('#recent-grid'));
 });
 
 qs('#clear-recent').addEventListener('click', async event => {
