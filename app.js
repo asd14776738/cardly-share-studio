@@ -4,6 +4,7 @@ import { buildContentPalette, summarizeImagePixels } from './palette-engine.js';
 import { formatSourceLink } from './source-link.js';
 import { mergeHashtags, splitHashtags } from './hashtags.js';
 import { HISTORY_LIMIT, createHistorySnapshot, normalizeHistoryItems, formatHistoryTime } from './history-store.js';
+import { readActiveDraftId, writeActiveDraftId, clearActiveDraftId, saveStatusText } from './draft-session.js';
 
 const platformIcons = {
   web: '/assets/icons/web.svg',
@@ -174,6 +175,29 @@ let historyDatabasePromise = null;
 let activeHistoryId = null;
 let historyAutosaveTimer = null;
 
+function draftStorage() {
+  try { return window.localStorage; }
+  catch { return null; }
+}
+
+function setSaveStatus(status) {
+  const node = qs('#save-status');
+  if (!node) return;
+  const normalized = ['idle', 'saving', 'saved', 'restored', 'error'].includes(status) ? status : 'idle';
+  node.dataset.state = normalized;
+  node.textContent = saveStatusText(normalized);
+}
+
+function setActiveHistoryId(id) {
+  activeHistoryId = typeof id === 'string' && id ? id : null;
+  if (activeHistoryId) writeActiveDraftId(draftStorage(), activeHistoryId);
+  else clearActiveDraftId(draftStorage());
+  qsa('[data-history-id]').forEach(button => {
+    if (button.dataset.historyId === activeHistoryId) button.setAttribute('aria-current', 'true');
+    else button.removeAttribute('aria-current');
+  });
+}
+
 function openHistoryDatabase() {
   if (!('indexedDB' in window)) return Promise.reject(new Error('IndexedDB unavailable'));
   if (historyDatabasePromise) return historyDatabasePromise;
@@ -246,6 +270,7 @@ function createRecentCard(entry) {
   button.type = 'button';
   button.className = 'recent-card history-card';
   button.dataset.historyId = entry.id;
+  if (entry.id === activeHistoryId) button.setAttribute('aria-current', 'true');
   const palette = historyPalette(entry);
   button.style.setProperty('--history-a', palette.stops?.[0] || '#e7e5df');
   button.style.setProperty('--history-b', palette.stops?.[1] || palette.stops?.[0] || '#f5f3ee');
@@ -311,6 +336,7 @@ async function renderRecentHistory() {
 }
 
 async function persistCurrentCard({ silent = false } = {}) {
+  setSaveStatus('saving');
   const snapshot = createHistorySnapshot(state, { id: activeHistoryId });
   try {
     await historyPut(snapshot);
@@ -318,10 +344,15 @@ async function persistCurrentCard({ silent = false } = {}) {
     const compact = { ...snapshot, images: snapshot.images.filter(src => !src.startsWith('data:')).slice(0, 4) };
     compact.image = compact.images[0] || '';
     try { await historyPut(compact); }
-    catch { if (!silent) showToast('当前浏览器无法保存历史记录'); return false; }
+    catch {
+      setSaveStatus('error');
+      if (!silent) showToast('当前浏览器无法保存历史记录');
+      return false;
+    }
     if (!silent) showToast('作品已保存，本地大图未写入历史');
   }
-  activeHistoryId = snapshot.id;
+  setActiveHistoryId(snapshot.id);
+  setSaveStatus('saved');
   const all = (await historyGetAll()).sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0));
   await Promise.all(all.slice(HISTORY_LIMIT).map(item => historyDelete(item.id)));
   await renderRecentHistory();
@@ -329,14 +360,20 @@ async function persistCurrentCard({ silent = false } = {}) {
 }
 
 function scheduleHistoryAutosave() {
+  setSaveStatus('saving');
   clearTimeout(historyAutosaveTimer);
   historyAutosaveTimer = setTimeout(() => void persistCurrentCard({ silent: true }), 700);
 }
 
-async function restoreHistoryEntry(id) {
+async function restoreHistoryEntry(id, { announce = true, focusResult = true } = {}) {
   const entry = await historyGet(id).catch(() => null);
-  if (!entry) return showToast('这条历史记录已不存在');
-  activeHistoryId = entry.id;
+  if (!entry) {
+    setActiveHistoryId(null);
+    setSaveStatus('idle');
+    if (announce) showToast('这条历史记录已不存在');
+    return false;
+  }
+  setActiveHistoryId(entry.id);
   const source = sourceData[entry.source] ? entry.source : 'web';
   Object.assign(state, defaults, entry, {
     source,
@@ -363,9 +400,21 @@ async function restoreHistoryEntry(id) {
   status.querySelector('strong').textContent = '已恢复';
   qs('#extract-summary').textContent = formatHistoryTime(entry.updatedAt) || '历史作品';
   refreshContentPalette();
-  if (matchMedia('(max-width: 760px)').matches) setMobilePanel('preview');
-  else qs('#studio').scrollIntoView({ block: 'start', behavior: 'smooth' });
-  showToast('已恢复历史作品，可继续编辑');
+  setSaveStatus('restored');
+  if (focusResult) {
+    if (matchMedia('(max-width: 760px)').matches) setMobilePanel('preview');
+    else qs('#studio').scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+  if (announce) showToast('已恢复历史作品，可继续编辑');
+  return true;
+}
+
+async function restoreActiveDraftOnStartup() {
+  const id = readActiveDraftId(draftStorage());
+  if (!id) { setSaveStatus('idle'); return false; }
+  const restored = await restoreHistoryEntry(id, { announce: false, focusResult: false });
+  if (!restored) setSaveStatus('idle');
+  return restored;
 }
 
 function setMobilePanel(panel, { scroll = true } = {}) {
@@ -626,7 +675,7 @@ function selectSource(source, applyPreset = true) {
 }
 
 qsa('.source-tab').forEach(tab => tab.addEventListener('click', () => {
-  activeHistoryId = null;
+  setActiveHistoryId(null);
   selectSource(tab.dataset.source);
 }));
 
@@ -731,7 +780,7 @@ qs('#generate-button').addEventListener('click', async () => {
   urlInput.value = value;
   button.classList.add('loading');
   button.textContent = '正在生成…';
-  activeHistoryId = null;
+  setActiveHistoryId(null);
   state.url = value;
   state.platform = state.source;
   state.contentStatus = 'ok';
@@ -829,7 +878,8 @@ qs('#generate-button').addEventListener('click', async () => {
 });
 
 qs('#reset-button').addEventListener('click', () => {
-  activeHistoryId = null;
+  setActiveHistoryId(null);
+  setSaveStatus('idle');
   Object.assign(state, defaults, { images: [...defaults.images] });
   urlInput.value = defaults.url;
   titleInput.value = defaults.title;
@@ -861,7 +911,8 @@ qs('#clear-recent').addEventListener('click', async event => {
     return;
   }
   await historyClear().catch(() => null);
-  activeHistoryId = null;
+  setActiveHistoryId(null);
+  setSaveStatus('idle');
   button.dataset.confirm = 'false';
   button.textContent = '清空记录';
   await renderRecentHistory();
@@ -1280,4 +1331,7 @@ async function downloadPreviewCard() {
 
 qsa('[data-download]').forEach(button => button.addEventListener('click', downloadPreviewCard));
 updateCard();
-void renderRecentHistory();
+void (async () => {
+  await restoreActiveDraftOnStartup();
+  await renderRecentHistory();
+})();

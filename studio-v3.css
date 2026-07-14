@@ -452,7 +452,7 @@ body.studio-app button { cursor: pointer; }
   max-width: 42%;
   overflow: hidden;
   color: currentColor;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
   letter-spacing: .045em;
   text-overflow: ellipsis;
@@ -1131,4 +1131,54 @@ body.studio-app button { cursor: pointer; }
   body[data-mobile-panel="history"] .compact-history .recent-card.no-thumb { grid-template-columns: 1fr; }
   body[data-mobile-panel="history"] .history-card .recent-thumb { grid-column: 2; }
   body[data-mobile-panel="history"] .recent-empty { min-height: 240px; }
+}
+
+
+/* v37: visible autosave trust and immediate draft continuity */
+.panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.panel-heading > div { min-width: 0; }
+.save-status {
+  flex: 0 0 auto;
+  min-height: 26px;
+  margin-top: 1px;
+  padding: 5px 10px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #ddd9d2;
+  border-radius: 999px;
+  color: #777a80;
+  background: rgba(248,247,244,.84);
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition: color .18s ease, background .18s ease, border-color .18s ease;
+}
+.save-status[data-state="saving"] { color: #75623e; border-color: #e4d8bf; background: #f8f2e7; }
+.save-status[data-state="saved"],
+.save-status[data-state="restored"] { color: #356451; border-color: #cfe0d7; background: #edf5f1; }
+.save-status[data-state="error"] { color: #96483e; border-color: #e7cbc6; background: #f8ecea; }
+.history-card[aria-current="true"] { box-shadow: 0 0 0 2px rgba(53,100,81,.2), 0 8px 20px rgba(31,51,91,.1); }
+
+@media (max-width: 760px) {
+  .save-status { margin-top: 0; padding-inline: 8px; font-size: 11px; }
+}
+
+
+/* v37 QA fix: keep the clean-start action reachable on mobile */
+@media (max-width: 760px) {
+  .app-topbar .button-quiet {
+    display: inline-flex;
+    min-width: 48px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+  .app-topbar .topbar-actions { gap: 4px; }
 }

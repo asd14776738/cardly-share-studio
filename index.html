@@ -8,8 +8,8 @@
   <meta name="description" content="把网页与社交内容链接变成精美、可编辑的分享卡片。" />
   <title>Cardly — 链接卡片生成器</title>
   <link rel="preconnect" href="https://images.unsplash.com" />
-  <link rel="stylesheet" href="./styles.css?v=36" />
-  <link rel="stylesheet" href="./studio-v3.css?v=36" />
+  <link rel="stylesheet" href="./styles.css?v=37" />
+  <link rel="stylesheet" href="./studio-v3.css?v=37" />
 </head>
 <body class="studio-app" data-mobile-panel="content">
   <header class="topbar app-topbar">
@@ -26,7 +26,7 @@
     </nav>
     <section class="studio studio-v3" id="studio" aria-label="卡片制作台">
       <aside class="editor-column content-panel" aria-labelledby="content-panel-title">
-        <div class="panel-heading"><div><h1 id="content-panel-title">内容</h1><p>粘贴公开链接，自动提取正文与图片</p></div></div>
+        <div class="panel-heading"><div><h1 id="content-panel-title">内容</h1><p>粘贴公开链接，自动提取正文与图片</p></div><span class="save-status" id="save-status" data-state="idle" role="status" aria-live="polite" aria-atomic="true">本地自动保存</span></div>
         <div class="source-tabs" role="tablist" aria-label="内容来源">
           <button class="source-tab active" data-source="web" role="tab" aria-selected="true"><img src="/assets/icons/web.svg" alt="" />网页</button>
           <button class="source-tab" data-source="weibo" role="tab" aria-selected="false"><img src="/assets/icons/weibo.svg" alt="" />微博</button>
@@ -97,6 +97,6 @@
     </section>
     <section class="recent compact-history" id="recent" aria-labelledby="recent-title"><div class="section-head"><div><h2 id="recent-title">最近生成</h2><p>自动保存，随时回到上次编辑</p></div><button id="clear-recent" hidden>清空记录</button></div><div class="recent-grid is-empty" id="recent-grid"><div class="recent-empty"><strong>还没有历史作品</strong><span>生成、编辑或导出后会自动保存在这里</span></div></div></section>
   </main>
-  <div class="toast" id="toast" role="status" aria-live="polite"></div><script type="module" src="./app.js?v=36"></script>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div><script type="module" src="./app.js?v=37"></script>
 </body>
 </html>
