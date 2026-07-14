@@ -8,6 +8,7 @@ import { readActiveDraftId, writeActiveDraftId, clearActiveDraftId, saveStatusTe
 import { loadingExtractFeedback, feedbackForMetadata, feedbackForFailure } from './extract-feedback.js';
 import { sourceInputHint, isGenerateShortcut } from './source-input.js';
 import { summarizePreviewAssets } from './export-readiness.js';
+import { fixedRatioPlan } from './ratio-layout.js';
 
 const platformIcons = {
   web: '/assets/icons/web.svg',
@@ -623,6 +624,11 @@ function updateCard() {
   card.style.setProperty('--theme-text', theme.text);
   card.style.setProperty('--card-radius', `${state.radius || 0}px`);
   card.style.setProperty('--surface-pad', `${state.padding || 32}px`);
+  const ratioPlan = fixedRatioPlan(state.ratio, { mediaCount, density });
+  card.style.setProperty('--ratio-title-lines', ratioPlan?.titleLines || 3);
+  card.style.setProperty('--ratio-description-lines', ratioPlan?.descriptionLines || 8);
+  card.style.setProperty('--fixed-media-min', `${ratioPlan?.mediaMin || 0}px`);
+  card.style.setProperty('--fixed-media-fit', ratioPlan?.mediaFit || 'cover');
   const titleNode = qs('#preview-card-title');
   titleNode.textContent = content.title;
   titleNode.hidden = !content.title;

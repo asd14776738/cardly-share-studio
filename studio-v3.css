@@ -1216,3 +1216,96 @@ body.studio-app button { cursor: pointer; }
 .button-spinner{width:14px;height:14px;border:1.5px solid currentColor;border-right-color:transparent;border-radius:50%;animation:cardly-spin .7s linear infinite;flex:0 0 auto}
 @keyframes cardly-spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.button-spinner{animation-duration:1.4s}}
+
+
+/* v41: fixed ratios recompose content instead of shrinking the auto layout. */
+.preview-stage .share-card:not(.ratio-auto).has-media .card-copy {
+  min-height: 0;
+  margin-top: 0;
+  overflow: hidden;
+}
+.preview-stage .share-card:not(.ratio-auto).has-media .card-copy h3 {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--ratio-title-lines, 2);
+}
+.preview-stage .share-card:not(.ratio-auto).has-media .card-copy > #preview-card-description {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--ratio-description-lines, 3);
+}
+.preview-stage .share-card:not(.ratio-auto).has-media .media-gallery {
+  min-width: 0;
+  min-height: var(--fixed-media-min, 96px);
+  height: 100%;
+  margin-top: 0;
+}
+.preview-stage .share-card:not(.ratio-auto).has-media .media-gallery.media-count-1 img {
+  object-fit: var(--fixed-media-fit, cover);
+  object-position: 50% 50%;
+}
+
+.preview-stage .share-card.ratio-square.has-media .card-surface,
+.preview-stage .share-card.ratio-portrait.has-media .card-surface {
+  display: grid;
+  align-content: stretch;
+}
+.preview-stage .share-card.ratio-square.has-media .card-surface {
+  grid-template-rows: auto auto minmax(var(--fixed-media-min, 150px), 1fr) auto;
+  gap: 8px;
+  padding: clamp(18px, var(--surface-pad), 28px);
+}
+.preview-stage .share-card.ratio-portrait.has-media .card-surface {
+  grid-template-rows: auto auto minmax(var(--fixed-media-min, 240px), 1fr) auto;
+  gap: 12px;
+  padding: clamp(22px, var(--surface-pad), 36px);
+}
+.preview-stage .share-card.ratio-square.has-media .card-kicker {
+  margin-bottom: 5px !important;
+  font-size: 7px !important;
+  line-height: 1.2;
+}
+.preview-stage .share-card.ratio-square.has-media .card-copy h3 {
+  margin-bottom: 5px;
+  font-size: 17px;
+  line-height: 1.32;
+}
+.preview-stage .share-card.ratio-square.has-media .card-copy > #preview-card-description {
+  font-size: 11.5px;
+  line-height: 1.48;
+}
+.preview-stage .share-card.ratio-square.has-media .card-byline {
+  margin-top: 7px !important;
+  font-size: 8.5px !important;
+}
+.preview-stage .share-card.ratio-square.has-media .card-tags {
+  max-height: 1.35em;
+  margin-top: 5px;
+  font-size: 7px;
+}
+.preview-stage .share-card.ratio-square.has-media .card-footer,
+.preview-stage .share-card.ratio-portrait.has-media .card-footer {
+  margin-top: 0;
+}
+.preview-stage .share-card.ratio-square.has-media .card-footer {
+  padding-top: 6px;
+}
+.preview-stage .share-card.ratio-portrait.has-media .card-copy h3 {
+  margin-bottom: 8px;
+  font-size: 20px;
+  line-height: 1.35;
+}
+.preview-stage .share-card.ratio-portrait.has-media .card-copy > #preview-card-description {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.preview-stage .share-card.ratio-portrait.has-media .card-byline {
+  margin-top: 10px !important;
+  font-size: 9.5px !important;
+}
+.preview-stage .share-card.ratio-wide.has-media .media-gallery {
+  align-self: stretch;
+  min-height: var(--fixed-media-min, 96px);
+}
