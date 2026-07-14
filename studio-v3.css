@@ -1207,3 +1207,7 @@ body.studio-app button { cursor: pointer; }
   }
   .app-topbar .topbar-actions { gap: 4px; }
 }
+
+/* v39: fast source recognition and keyboard generation */
+#source-hint[data-state="recognized"] { color: #52745f; font-weight: 650; }
+.generate-wide[aria-busy="true"] { cursor: wait; opacity: .82; }

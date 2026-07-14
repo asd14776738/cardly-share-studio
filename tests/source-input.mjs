@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import { recognizedSourceLabel, sourceInputHint, isGenerateShortcut } from '../source-input.js';
+assert.equal(recognizedSourceLabel('copy https://v.douyin.com/abc/ open'), '\u6296\u97f3');
+assert.equal(recognizedSourceLabel('https://www.instagram.com/p/abc/'), 'Instagram');
+assert.equal(recognizedSourceLabel('https://example.com/story'), '\u516c\u5f00\u94fe\u63a5');
+assert.equal(recognizedSourceLabel('no link'), '');
+assert.match(sourceInputHint('https://x.com/openai/status/1'), /X/);
+assert.equal(sourceInputHint('hello'), '\u652f\u6301\u7c98\u8d34\u516c\u5f00\u94fe\u63a5\u6216\u6574\u6bb5\u5206\u4eab\u53e3\u4ee4');
+assert.equal(isGenerateShortcut({ key:'Enter', ctrlKey:true }), true);
+assert.equal(isGenerateShortcut({ key:'Enter', metaKey:true }), true);
+assert.equal(isGenerateShortcut({ key:'Enter', ctrlKey:true, shiftKey:true }), false);
+assert.equal(isGenerateShortcut({ key:'a', ctrlKey:true }), false);
+console.log('Source input tests passed.');

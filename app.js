@@ -6,6 +6,7 @@ import { mergeHashtags, splitHashtags } from './hashtags.js';
 import { HISTORY_LIMIT, createHistorySnapshot, normalizeHistoryItems, formatHistoryTime } from './history-store.js';
 import { readActiveDraftId, writeActiveDraftId, clearActiveDraftId, saveStatusText } from './draft-session.js';
 import { loadingExtractFeedback, feedbackForMetadata, feedbackForFailure } from './extract-feedback.js';
+import { sourceInputHint, isGenerateShortcut } from './source-input.js';
 
 const platformIcons = {
   web: '/assets/icons/web.svg',
@@ -418,6 +419,13 @@ async function restoreActiveDraftOnStartup() {
   return restored;
 }
 
+function updateSourceHint(value, { reset = false } = {}) {
+  const hint=qs('#source-hint');
+  if (!hint) return;
+  hint.textContent=reset ? '支持文章、作品集、产品页等公开网页' : sourceInputHint(value);
+  hint.dataset.state=reset ? 'idle' : (hint.textContent.startsWith('已识别') ? 'recognized' : 'idle');
+}
+
 function renderExtractFeedback(feedback) {
   const status = qs('#extract-status');
   if (!status) return;
@@ -802,10 +810,14 @@ qs('#source-icon-image').addEventListener('error', () => {
 
 qs('#generate-button').addEventListener('click', async () => {
   const button = qs('#generate-button');
+  if (button.disabled) return;
   const rawValue = urlInput.value.trim();
   const value = extractUrlFromShare(rawValue);
   if (!value) { urlInput.focus(); return showToast('请粘贴包含 https:// 的公开链接或分享口令'); }
   urlInput.value = value;
+  updateSourceHint(value);
+  button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
   button.classList.add('loading');
   button.textContent = '正在生成…';
   renderExtractFeedback(loadingExtractFeedback());
@@ -881,12 +893,15 @@ qs('#generate-button').addEventListener('click', async () => {
   } finally {
     refreshContentPalette();
     button.classList.remove('loading');
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
     button.innerHTML = '<span>生成卡片</span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12m-4-4 4 4-4 4"/></svg>';
   }
 });
 
 qs('#reset-button').addEventListener('click', () => {
   hideExtractFeedback();
+  updateSourceHint(defaults.url, { reset: true });
   setActiveHistoryId(null);
   setSaveStatus('idle');
   Object.assign(state, defaults, { images: [...defaults.images] });
@@ -903,6 +918,12 @@ qs('#reset-button').addEventListener('click', () => {
   qsa('.theme-swatch').forEach(x => x.classList.toggle('active', x.dataset.theme === state.theme));
   selectSource('web', false);
   showToast('已恢复默认样式');
+});
+
+urlInput.addEventListener('keydown', event => {
+  if (!isGenerateShortcut(event)) return;
+  event.preventDefault();
+  qs('#generate-button').click();
 });
 
 qs('#extract-actions').addEventListener('click', event => {
@@ -945,7 +966,7 @@ qs('#clear-recent').addEventListener('click', async event => {
 });
 
 qs('#studio').addEventListener('input', event => {
-  if (event.target === urlInput) { hideExtractFeedback(); return; }
+  if (event.target === urlInput) { hideExtractFeedback(); updateSourceHint(urlInput.value); return; }
   scheduleHistoryAutosave();
 });
 qs('#studio').addEventListener('change', () => scheduleHistoryAutosave());
