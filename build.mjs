@@ -4,7 +4,7 @@ await rm('dist', { recursive: true, force: true });
 await mkdir('dist/server', { recursive: true });
 await mkdir('dist/.openai', { recursive: true });
 
-const [html, css, studioCss, js, readingTime, mediaLayout, paletteEngine, sourceLink, hashtags, historyStore, draftSession, hosting, workerTemplate] = await Promise.all([
+const [html, css, studioCss, js, readingTime, mediaLayout, paletteEngine, sourceLink, hashtags, historyStore, draftSession, extractFeedback, hosting, workerTemplate] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('styles.css', 'utf8'),
   readFile('studio-v3.css', 'utf8'),
@@ -16,6 +16,7 @@ const [html, css, studioCss, js, readingTime, mediaLayout, paletteEngine, source
   readFile('hashtags.js', 'utf8'),
   readFile('history-store.js', 'utf8'),
   readFile('draft-session.js', 'utf8'),
+  readFile('extract-feedback.js', 'utf8'),
   readFile('.openai/hosting.json', 'utf8'),
   readFile('worker-template.js', 'utf8'),
 ]);
@@ -33,6 +34,7 @@ const files = {
   '/hashtags.js': ['text/javascript; charset=utf-8', hashtags],
   '/history-store.js': ['text/javascript; charset=utf-8', historyStore],
   '/draft-session.js': ['text/javascript; charset=utf-8', draftSession],
+  '/extract-feedback.js': ['text/javascript; charset=utf-8', extractFeedback],
 };
 
 for (const iconName of await readdir('assets/icons')) {

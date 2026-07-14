@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+import { loadingExtractFeedback, feedbackForMetadata, feedbackForFailure } from '../extract-feedback.js';
+
+assert.deepEqual(loadingExtractFeedback(), { state: 'loading', title: '正在读取', summary: '连接公开页面', message: '', actions: [] });
+assert.deepEqual(feedbackForMetadata({ status: 'ok' }, 3), { state: 'success', title: '已提取', summary: '3 张图片 · 可继续编辑', message: '', actions: [] });
+const limited = feedbackForMetadata({ status: 'login_required', platformLabel: 'Instagram' }, 0);
+assert.equal(limited.state, 'limited');
+assert.equal(limited.title, '访问受限');
+assert.equal(limited.summary, 'Instagram');
+assert.deepEqual(limited.actions, ['manual', 'upload']);
+const unavailable = feedbackForMetadata({ status: 'unavailable' }, 0);
+assert.equal(unavailable.title, '内容不可用');
+assert.match(unavailable.message, /下架/);
+const partial = feedbackForMetadata({ status: 'partial' }, 1);
+assert.equal(partial.summary, '仅提取到公开摘要');
+const failure = feedbackForFailure(new Error('平台暂时拒绝匿名访问'));
+assert.equal(failure.state, 'error');
+assert.equal(failure.summary, '原内容已保留');
+assert.match(failure.message, /限制匿名读取/);
+assert.deepEqual(failure.actions, ['retry', 'upload']);
+assert.match(feedbackForFailure(new Error('timeout')).message, /响应超时/);
+assert.match(feedbackForFailure(new Error('unexpected')).message, /没有被覆盖/);
+console.log('Extract feedback tests passed.');

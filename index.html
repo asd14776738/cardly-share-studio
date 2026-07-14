@@ -8,8 +8,8 @@
   <meta name="description" content="把网页与社交内容链接变成精美、可编辑的分享卡片。" />
   <title>Cardly — 链接卡片生成器</title>
   <link rel="preconnect" href="https://images.unsplash.com" />
-  <link rel="stylesheet" href="./styles.css?v=37" />
-  <link rel="stylesheet" href="./studio-v3.css?v=37" />
+  <link rel="stylesheet" href="./styles.css?v=38" />
+  <link rel="stylesheet" href="./studio-v3.css?v=38" />
 </head>
 <body class="studio-app" data-mobile-panel="content">
   <header class="topbar app-topbar">
@@ -38,7 +38,7 @@
           <label for="source-url">粘贴公开链接或整段分享口令</label>
           <textarea id="source-url" rows="2" autocomplete="off">https://www.archdaily.cn/cn/1012043</textarea>
           <button class="button button-blue generate-wide" id="generate-button"><span>生成卡片</span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12m-4-4 4 4-4 4"/></svg></button>
-          <div class="extract-status" id="extract-status" hidden><span></span><strong>已提取</strong><em id="extract-summary">可继续编辑</em></div>
+          <div class="extract-status" id="extract-status" data-state="success" hidden><span class="extract-status-dot" aria-hidden="true"></span><div class="extract-status-body"><div class="extract-status-head"><strong id="extract-status-title">已提取</strong><em id="extract-summary">可继续编辑</em></div><p id="extract-status-message" aria-live="polite" aria-atomic="true" hidden></p><div class="extract-actions" id="extract-actions" hidden><button type="button" data-extract-action="retry">重试</button><button type="button" data-extract-action="manual">手动补充</button><label for="image-upload" data-extract-action="upload">添加图片</label></div></div></div>
           <p class="input-hint" id="source-hint">支持文章、作品集、产品页等公开网页</p>
         </div>
         <details class="edit-details" open>
@@ -97,6 +97,6 @@
     </section>
     <section class="recent compact-history" id="recent" aria-labelledby="recent-title"><div class="section-head"><div><h2 id="recent-title">最近生成</h2><p>自动保存，随时回到上次编辑</p></div><button id="clear-recent" hidden>清空记录</button></div><div class="recent-grid is-empty" id="recent-grid"><div class="recent-empty"><strong>还没有历史作品</strong><span>生成、编辑或导出后会自动保存在这里</span></div></div></section>
   </main>
-  <div class="toast" id="toast" role="status" aria-live="polite"></div><script type="module" src="./app.js?v=37"></script>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div><script type="module" src="./app.js?v=38"></script>
 </body>
 </html>

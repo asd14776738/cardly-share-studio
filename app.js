@@ -5,6 +5,7 @@ import { formatSourceLink } from './source-link.js';
 import { mergeHashtags, splitHashtags } from './hashtags.js';
 import { HISTORY_LIMIT, createHistorySnapshot, normalizeHistoryItems, formatHistoryTime } from './history-store.js';
 import { readActiveDraftId, writeActiveDraftId, clearActiveDraftId, saveStatusText } from './draft-session.js';
+import { loadingExtractFeedback, feedbackForMetadata, feedbackForFailure } from './extract-feedback.js';
 
 const platformIcons = {
   web: '/assets/icons/web.svg',
@@ -417,6 +418,32 @@ async function restoreActiveDraftOnStartup() {
   return restored;
 }
 
+function renderExtractFeedback(feedback) {
+  const status = qs('#extract-status');
+  if (!status) return;
+  const stateName = ['loading', 'success', 'limited', 'error'].includes(feedback?.state) ? feedback.state : 'success';
+  status.hidden = false;
+  status.dataset.state = stateName;
+  qs('#extract-status-title').textContent = feedback?.title || '';
+  qs('#extract-summary').textContent = feedback?.summary || '';
+  const message = qs('#extract-status-message');
+  message.textContent = feedback?.message || '';
+  message.hidden = !message.textContent;
+  const enabledActions = new Set(Array.isArray(feedback?.actions) ? feedback.actions : []);
+  let visibleActionCount = 0;
+  status.querySelectorAll('[data-extract-action]').forEach(control => {
+    const visible = enabledActions.has(control.dataset.extractAction);
+    control.hidden = !visible;
+    if (visible) visibleActionCount += 1;
+  });
+  qs('#extract-actions').hidden = visibleActionCount === 0;
+}
+
+function hideExtractFeedback() {
+  const status = qs('#extract-status');
+  if (status) status.hidden = true;
+}
+
 function setMobilePanel(panel, { scroll = true } = {}) {
   if (!['content', 'preview', 'style', 'history'].includes(panel)) return;
   document.body.dataset.mobilePanel = panel;
@@ -675,6 +702,7 @@ function selectSource(source, applyPreset = true) {
 }
 
 qsa('.source-tab').forEach(tab => tab.addEventListener('click', () => {
+  hideExtractFeedback();
   setActiveHistoryId(null);
   selectSource(tab.dataset.source);
 }));
@@ -780,31 +808,25 @@ qs('#generate-button').addEventListener('click', async () => {
   urlInput.value = value;
   button.classList.add('loading');
   button.textContent = '正在生成…';
-  setActiveHistoryId(null);
-  state.url = value;
-  state.platform = state.source;
-  state.contentStatus = 'ok';
-  state.readingMinutes = null;
-  state.metricType = '';
-  state.metricCount = null;
-  state.icon = iconForUrl(value);
-  state.image = '';
-  state.images = [];
-  state.imageColors = {};
+  renderExtractFeedback(loadingExtractFeedback());
   const host = new URL(value).hostname.replace(/^www\./, '').toUpperCase();
-  sourceData[state.source].name = host;
-  state.title = host;
-  state.description = '';
-  state.author = host;
-  state.sourceLabel = host;
-  authorInput.value = state.author;
-  titleInput.value = state.title;
-  descriptionInput.value = '';
   try {
     const response = await fetch('/api/extract?url=' + encodeURIComponent(value));
     const metadata = await response.json().catch(() => null);
     if (!response.ok) throw new Error(metadata?.detail || metadata?.error || '提取失败');
+
+    setActiveHistoryId(null);
+    state.url = value;
     state.platform = metadata?.platform || state.source;
+    state.source = sourceData[state.platform] ? state.platform : state.source;
+    state.contentStatus = metadata?.status || 'ok';
+    state.readingMinutes = Number.isFinite(metadata?.readingMinutes) ? metadata.readingMinutes : estimateReadingMinutes(metadata?.description);
+    state.metricType = metadata?.metricType === 'views' || metadata?.metricType === 'likes' ? metadata.metricType : '';
+    state.metricCount = Number.isFinite(metadata?.metricCount) ? metadata.metricCount : null;
+    state.icon = iconForUrl(value);
+    state.image = '';
+    state.images = [];
+    state.imageColors = {};
     state.author = metadata?.author || metadata?.platformLabel || host;
     const extractedTitle = String(metadata?.title || '').trim();
     const compactTitle = extractedTitle.replace(/\s+/g, '');
@@ -815,21 +837,13 @@ qs('#generate-button').addEventListener('click', async () => {
       compactTitle === compactAuthor + '\u7684\u5fae\u535a'
     );
     state.title = redundantWeiboTitle ? '' : extractedTitle || host;
-    if (sourceData[state.platform]) {
-      state.source = state.platform;
-      qsa('.source-tab').forEach(tab => {
-        const selected = tab.dataset.source === state.source;
-        tab.classList.toggle('active', selected);
-        tab.setAttribute('aria-selected', String(selected));
-      });
-    }
-    authorInput.value = state.author;
+    qsa('.source-tab').forEach(tab => {
+      const selected = tab.dataset.source === state.source;
+      tab.classList.toggle('active', selected);
+      tab.setAttribute('aria-selected', String(selected));
+    });
     const sourceLabels = { douyin: '\u6296\u97f3', weibo: '微博', xiaohongshu: '小红书', instagram: 'Instagram', x: 'X' };
     state.sourceLabel = sourceLabels[state.platform] || metadata?.platformLabel || host;
-    state.contentStatus = metadata?.status || 'ok';
-    state.readingMinutes = Number.isFinite(metadata?.readingMinutes) ? metadata.readingMinutes : estimateReadingMinutes(metadata?.description);
-    state.metricType = metadata?.metricType === 'views' || metadata?.metricType === 'likes' ? metadata.metricType : '';
-    state.metricCount = Number.isFinite(metadata?.metricCount) ? metadata.metricCount : null;
     const accessMessage = metadata?.status === 'login_required'
       ? `${metadata.platformLabel || '该平台'}限制匿名读取，请上传截图或手动粘贴正文`
       : metadata?.status === 'unavailable'
@@ -838,6 +852,7 @@ qs('#generate-button').addEventListener('click', async () => {
           ? '只提取到有限公开信息，可手动补充标题、正文和图片'
           : '';
     state.description = (metadata?.description || accessMessage).slice(0, 2000);
+    authorInput.value = state.author;
     titleInput.value = state.title;
     descriptionInput.value = state.description;
     const extractedImages = Array.isArray(metadata?.images)
@@ -846,17 +861,9 @@ qs('#generate-button').addEventListener('click', async () => {
     if (extractedImages.length) {
       state.images = [...new Set(extractedImages)].slice(0, 12);
       state.image = state.images[0];
-      state.imageColors = {};
     }
-    if (metadata?.platformLabel) sourceData[state.source].name = metadata.platformLabel.toUpperCase();
-    const extractStatus = qs('#extract-status');
-    const extractSummary = qs('#extract-summary');
-    extractStatus.hidden = false;
-    extractStatus.classList.toggle('is-limited', metadata?.status !== 'ok');
-    extractStatus.querySelector('strong').textContent = metadata?.status === 'ok' ? '已提取' : '需要补充';
-    extractSummary.textContent = metadata?.status === 'ok'
-      ? `${state.images.length} 张图片 · 可继续编辑`
-      : (metadata?.status === 'login_required' ? '平台限制匿名读取' : '仅提取到公开摘要');
+    if (sourceData[state.source]) sourceData[state.source].name = (metadata?.platformLabel || host).toUpperCase();
+    renderExtractFeedback(feedbackForMetadata(metadata, state.images.length));
     if (metadata?.status === 'login_required') {
       showToast(`${metadata.platformLabel || '该平台'}限制匿名访问，可上传截图继续排版`);
     } else if (metadata?.status === 'partial') {
@@ -868,8 +875,9 @@ qs('#generate-button').addEventListener('click', async () => {
     }
     await persistCurrentCard({ silent: true });
     setMobilePanel('preview');
-  } catch {
-    showToast('暂时无法提取该链接，请重试或上传截图');
+  } catch (error) {
+    renderExtractFeedback(feedbackForFailure(error));
+    showToast('提取失败，原内容已保留');
   } finally {
     refreshContentPalette();
     button.classList.remove('loading');
@@ -878,6 +886,7 @@ qs('#generate-button').addEventListener('click', async () => {
 });
 
 qs('#reset-button').addEventListener('click', () => {
+  hideExtractFeedback();
   setActiveHistoryId(null);
   setSaveStatus('idle');
   Object.assign(state, defaults, { images: [...defaults.images] });
@@ -894,6 +903,22 @@ qs('#reset-button').addEventListener('click', () => {
   qsa('.theme-swatch').forEach(x => x.classList.toggle('active', x.dataset.theme === state.theme));
   selectSource('web', false);
   showToast('已恢复默认样式');
+});
+
+qs('#extract-actions').addEventListener('click', event => {
+  const control = event.target.closest('[data-extract-action]');
+  if (!control || control.hidden) return;
+  const action = control.dataset.extractAction;
+  if (action === 'retry') qs('#generate-button').click();
+  if (action === 'manual' || action === 'upload') {
+    const details = qs('.edit-details');
+    details.open = true;
+    setMobilePanel('content', { scroll: false });
+    if (action === 'manual') requestAnimationFrame(() => {
+      descriptionInput.focus();
+      descriptionInput.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    });
+  }
 });
 
 qs('#recent-grid').addEventListener('click', event => {
@@ -920,7 +945,7 @@ qs('#clear-recent').addEventListener('click', async event => {
 });
 
 qs('#studio').addEventListener('input', event => {
-  if (event.target === urlInput) state.url = extractUrlFromShare(urlInput.value) || state.url;
+  if (event.target === urlInput) { hideExtractFeedback(); return; }
   scheduleHistoryAutosave();
 });
 qs('#studio').addEventListener('change', () => scheduleHistoryAutosave());
