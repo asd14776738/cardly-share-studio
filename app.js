@@ -168,7 +168,7 @@ const urlInput = qs('#source-url');
 const authorInput = qs('#card-author');
 
 function setMobilePanel(panel, { scroll = true } = {}) {
-  if (!['content', 'preview', 'style'].includes(panel)) return;
+  if (!['content', 'preview', 'style', 'history'].includes(panel)) return;
   document.body.dataset.mobilePanel = panel;
   qsa('[data-mobile-panel-target]').forEach(button => {
     const active = button.dataset.mobilePanelTarget === panel;
@@ -182,6 +182,10 @@ function setMobilePanel(panel, { scroll = true } = {}) {
 
 qsa('[data-mobile-panel-target]').forEach(button => {
   button.addEventListener('click', () => setMobilePanel(button.dataset.mobilePanelTarget));
+});
+
+qs('.app-topbar .brand')?.addEventListener('click', () => {
+  if (matchMedia('(max-width: 760px)').matches) setMobilePanel('content');
 });
 
 function showToast(message) {

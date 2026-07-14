@@ -1024,3 +1024,49 @@ body.studio-app button { cursor: pointer; }
   .style-section { margin-top: 20px; }
   .compact-history { width: 100%; padding: 38px 18px 58px; }
 }
+
+
+/* v35: full-size utility targets and a dedicated mobile history mode */
+.app-topbar .brand {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.app-topbar nav a { min-width: 44px; padding-inline: 8px; }
+.zoom-control { height: 40px; }
+.zoom-control button { width: 40px; min-height: 40px; }
+.zoom-control span { width: 50px; }
+.style-section .segmented { min-height: 46px; }
+.style-section .segmented button { min-height: 40px; }
+.preview-stage .footer-source-link { min-height: 40px; justify-content: center; }
+.preview-stage .footer-arrow-link { min-width: 40px; min-height: 40px; display: grid; place-items: center; }
+.compact-history .section-head button {
+  min-width: 80px;
+  min-height: 40px;
+  padding-inline: 10px;
+  border-radius: 9px;
+}
+.compact-history .section-head button:hover { color: #34363c; background: #ece9e4; }
+
+@media (max-width: 760px) {
+  .mobile-workspace-tabs { grid-template-columns: repeat(4,minmax(0,1fr)); }
+  .mobile-workspace-tabs button { min-height: 42px; }
+  body:not([data-mobile-panel="history"]) .compact-history { display: none; }
+  body[data-mobile-panel="history"] .studio-v3 { display: none; }
+  body[data-mobile-panel="history"] .compact-history {
+    width: 100%;
+    min-height: calc(100dvh - 110px);
+    margin: 0;
+    padding: 28px 18px 58px;
+    display: block;
+    background: #f4f2ee;
+  }
+  body[data-mobile-panel="history"] .compact-history .section-head { margin-bottom: 18px; }
+  body[data-mobile-panel="history"] .compact-history .recent-grid { gap: 12px; }
+  body[data-mobile-panel="history"] .compact-history .recent-card {
+    min-height: 148px;
+    padding: 20px;
+    border-radius: 14px;
+  }
+  body[data-mobile-panel="history"] .compact-history .recent-card strong { font-size: 17px; }
+}

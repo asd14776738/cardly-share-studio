@@ -1,58 +1,53 @@
-# Cardly v34 Design QA
+# Cardly v35 Design QA
 
 **Source visual truth path**
 
-- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v34/desktop-before-after.jpg
-- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v34/mobile-before-after.jpg
-- Reference direction: official 小作卡片 listing and Poet.so product page
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v35/desktop-targets-before-after.jpg
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v35/history-before-after.jpg
+- Prior accepted v34 visual system and mobile task-switching pattern
 
 **Implementation screenshot path**
 
-- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v34/desktop-content.png
-- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v34/desktop-styled.png
-- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v34/mobile-content.png
-- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v34/mobile-preview.png
-- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v34/mobile-style.png
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v35/desktop.png
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v35/mobile-content.png
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v35/mobile-preview.png
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v35/mobile-style.png
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v35/mobile-history.png
 
 **Viewport and state**
 
-- Desktop: 1600 × 1000, default content and styled 4:5 states
-- Mobile: 390 × 844, Content / Preview / Style states
+- Desktop: 1600 × 1000, default Content state
+- Mobile: 390 × 844, Content / Preview / Style / History states
 
 **Full-view comparison evidence**
 
-- Desktop before/after comparison confirms a more stable stage, stronger link-first hierarchy, narrower side panels, and quieter controls.
-- Mobile before/after comparison confirms the editor is above the fold and the preview no longer blocks task entry.
+- The desktop before/after board shows the same visual hierarchy and card scale after target-size changes; no column, typography, or preview regression is visible.
+- The mobile History comparison shows the previous blank transition and hidden section replaced by an explicit fourth workspace mode.
 
 **Focused region comparison evidence**
 
-- Mobile workspace switcher, URL block, preview toolbar, theme controls, and desktop panel headings were inspected at native screenshot resolution.
-- The first pass exposed a content-heading collision on desktop and retained scroll offset when switching mobile modes.
+- Inspected the desktop preview toolbar, style segmented controls, footer source action, mobile workspace switcher, History header, Clear history action, and recent-card stack at native screenshot resolution.
 
 **Findings**
 
-- [P3] Some secondary utility targets remain below 40 px.
-  Location: preview zoom controls and a few tertiary style utilities.
-  Evidence: desktop metrics report 14 visible targets under 40 px; mobile Style reports 8.
-  Impact: low-frequency controls are slightly less forgiving than the new primary controls.
-  Follow-up: raise zoom and tertiary utility hit areas to 40–44 px without increasing visible chrome.
+- No actionable P0, P1, or P2 findings remain in the captured states.
+- Accepted product constraint: auto-height cards may require vertical scrolling in Preview because preserving the complete generated card is more important than forcing it into one viewport.
 
 **Required Fidelity Surfaces**
 
-- Fonts and typography: passed. UI hierarchy is clearer; card title/body weights are now visibly distinct and Chinese fallback stacks remain intact.
-- Spacing and layout rhythm: passed. Desktop columns and mobile task modes align consistently; first-pass heading collision was fixed.
-- Colors and visual tokens: passed. Warm neutrals and ink active states replace the previous bright-blue-heavy chrome while preserving content themes.
-- Image quality and asset fidelity: passed for the default state. Original platform assets and extracted imagery remain source-backed; no new placeholder asset was introduced.
-- Copy and content: passed. Existing Chinese labels and platform names remain accurate; Content tuning and 18+ platform disclosure improve scanability.
+- Fonts and typography: passed. Existing font stacks, hierarchy, wrapping, and optical weights are unchanged and remain coherent across all modes.
+- Spacing and layout rhythm: passed. Four mobile tabs fit at 390 px with no clipping; History begins directly below the persistent tabs; desktop control resizing does not shift the grid.
+- Colors and visual tokens: passed. The warm-neutral and ink system remains consistent; active History uses the same restrained surface treatment as the other modes.
+- Image quality and asset fidelity: passed. Original platform icons and extracted source image remain intact, sharp, and correctly scaled.
+- Copy and content: passed. History is now named where users look for workspace modes; no duplicate or placeholder helper copy was introduced.
+- Accessibility and targets: passed for the captured visible states. DOM metrics report zero visible interactive targets below 40 px and zero horizontal overflow.
 
 **Primary interactions tested**
 
-- Mobile Content / Preview / Style switching
-- Source tab selection
-- Theme selection
-- 4:5 ratio selection
-- Preview state update
-- Static build and all adapter/layout/palette/link/hashtag/icon tests
+- Mobile Content / Preview / Style / History switching
+- Brand returns mobile users from History to Content
+- Desktop and mobile preview rendering
+- Full adapter, reading-time, media-layout, palette, source-link, hashtag, and platform-icon test suite
 
 **Console errors checked**
 
@@ -60,24 +55,22 @@
 
 **Comparison history**
 
-1. First pass: P1 desktop heading/subcopy collision; P2 mobile Style mode opened with retained scroll offset.
-2. Fixes: restored a 48 px heading block and reset mobile mode switching to document top with non-animated scrolling.
-3. Post-fix evidence: desktop heading is separated correctly; all mobile modes begin at y=110 under the sticky workspace tabs; final console error list is empty.
+1. Baseline: 14 desktop and 2 mobile visible targets below 40 px; History existed below the active mobile workspace.
+2. Fixes: enlarged utility hit areas, added History to the switcher, and conditionally renders only the active mobile workspace or History surface.
+3. Post-fix evidence: every captured state reports zero sub-40 px targets; mobile History has a document height of 844 px; no console errors.
 
 **Implementation Checklist**
 
-- [x] Link-first desktop hierarchy
-- [x] Stable three-column creator shell
-- [x] Mobile workspace modes
-- [x] Automatic mobile Preview handoff after extraction
-- [x] Collapsible content/platform sections
-- [x] Warm-neutral premium token pass
-- [x] Post-fix visual recapture
+- [x] Dedicated mobile History mode
+- [x] Inactive History hidden from active editor modes
+- [x] Brand returns to Content on mobile
+- [x] 40 px minimum visible target size
+- [x] Desktop layout regression check
+- [x] Four-state mobile screenshot check
 - [x] Automated test suite
 
 **Follow-up Polish**
 
-- Increase tertiary utility hit areas without adding visual weight.
-- Consider a dedicated mobile recent-history mode instead of rendering history below the active workspace.
+- Once recent cards are backed by real persistence, add actual thumbnails, timestamps, and search/filtering rather than expanding the current fixture-only interface.
 
 final result: passed
