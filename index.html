@@ -7,16 +7,21 @@
   <meta name="description" content="把网页与社交内容链接变成精美、可编辑的分享卡片。" />
   <title>Cardly — 链接卡片生成器</title>
   <link rel="preconnect" href="https://images.unsplash.com" />
-  <link rel="stylesheet" href="./styles.css?v=33" />
-  <link rel="stylesheet" href="./studio-v3.css?v=33" />
+  <link rel="stylesheet" href="./styles.css?v=34" />
+  <link rel="stylesheet" href="./studio-v3.css?v=34" />
 </head>
-<body class="studio-app">
+<body class="studio-app" data-mobile-panel="content">
   <header class="topbar app-topbar">
     <a class="brand" href="#studio" aria-label="Cardly 制作台"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>Cardly</span></a>
     <nav aria-label="主导航"><a class="active" href="#studio">制作台</a><a href="#recent">历史</a></nav>
     <div class="topbar-actions"><button class="button button-quiet" id="reset-button">新建</button><button class="button button-dark header-export" data-download><span>导出 PNG</span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9m0 0 3.5-3.5M10 12 6.5 8.5M4 14.5V17h12v-2.5"/></svg></button></div>
   </header>
   <main class="app-main">
+    <nav class="mobile-workspace-tabs" aria-label="工作区">
+      <button class="active" type="button" data-mobile-panel-target="content" aria-pressed="true">内容</button>
+      <button type="button" data-mobile-panel-target="preview" aria-pressed="false">预览</button>
+      <button type="button" data-mobile-panel-target="style" aria-pressed="false">样式</button>
+    </nav>
     <section class="studio studio-v3" id="studio" aria-label="卡片制作台">
       <aside class="editor-column content-panel" aria-labelledby="content-panel-title">
         <div class="panel-heading"><div><h1 id="content-panel-title">内容</h1><p>粘贴公开链接，自动提取正文与图片</p></div></div>
@@ -34,13 +39,16 @@
           <div class="extract-status" id="extract-status" hidden><span></span><strong>已提取</strong><em id="extract-summary">可继续编辑</em></div>
           <p class="input-hint" id="source-hint">支持文章、作品集、产品页等公开网页</p>
         </div>
-        <div class="copy-fields">
-          <label for="card-title">标题</label><textarea id="card-title" rows="3">在海风与山影之间，重新想象公共空间</textarea>
-          <div class="field-meta"><label for="card-description">正文</label><span id="char-count">28 字 · 短内容</span></div><textarea id="card-description" rows="8" maxlength="2000">一座面向海岸的文化建筑，以层叠露台连接城市生活与自然景观。</textarea>
-          <label for="card-author">作者与来源</label><input id="card-author" type="text" value="ARCHDAILY.CN" />
-        </div>
-        <div class="upload-row"><div><strong>内容图片</strong><span id="image-count">可多选，自动排列</span></div><label class="upload-button" for="image-upload">添加图片</label><input id="image-upload" type="file" accept="image/*" multiple hidden /></div>
-        <div class="platform-support"><span>支持平台</span><div class="platform-rail" aria-label="其他支持平台">
+        <details class="edit-details" open>
+          <summary><span>内容微调</span><small>标题、正文、作者与配图</small></summary>
+          <div class="copy-fields">
+            <label for="card-title">标题</label><textarea id="card-title" rows="3">在海风与山影之间，重新想象公共空间</textarea>
+            <div class="field-meta"><label for="card-description">正文</label><span id="char-count">28 字 · 短内容</span></div><textarea id="card-description" rows="8" maxlength="2000">一座面向海岸的文化建筑，以层叠露台连接城市生活与自然景观。</textarea>
+            <label for="card-author">作者与来源</label><input id="card-author" type="text" value="ARCHDAILY.CN" />
+          </div>
+          <div class="upload-row"><div><strong>内容图片</strong><span id="image-count">可多选，自动排列</span></div><label class="upload-button" for="image-upload">添加图片</label><input id="image-upload" type="file" accept="image/*" multiple hidden /></div>
+        </details>
+        <details class="platform-support"><summary><span>支持 18+ 平台</span><small>展开查看</small></summary><div class="platform-rail" aria-label="其他支持平台">
           <span class="platform-chip" title="知乎"><img src="/assets/icons/zhihu.svg" alt="知乎" /></span>
           <span class="platform-chip" title="微信公众号"><img src="/assets/icons/wechat.svg" alt="微信" /></span>
           <span class="platform-chip" title="即刻"><img src="" data-platform-icon="jike" alt="即刻" /></span>
@@ -54,7 +62,7 @@
           <span class="platform-chip" title="Apple Music"><img src="/assets/icons/apple.svg" alt="Apple Music" /></span>
           <span class="platform-chip" title="ChatGPT"><img src="/assets/icons/chatgpt.svg" alt="ChatGPT" /></span>
           <span class="platform-chip" title="Kimi"><img src="/assets/icons/kimi.svg" alt="Kimi" /></span>
-        </div></div>
+        </div></details>
       </aside>
       <section class="preview-column preview-panel" aria-labelledby="preview-title">
         <div class="preview-head"><div><span class="live-dot"></span><h2 id="preview-title">实时预览</h2></div><div class="zoom-control" aria-label="预览缩放"><button id="zoom-out" aria-label="缩小">−</button><span id="zoom-value">100%</span><button id="zoom-in" aria-label="放大">＋</button></div></div>
@@ -72,7 +80,7 @@
       </section>
       <aside class="style-panel" aria-labelledby="style-panel-title">
         <div class="panel-heading"><div><h2 id="style-panel-title">样式</h2><p>让配色跟随内容，而不是套模板</p></div></div>
-        <button class="recommend-theme" id="recommend-theme"><span class="recommend-icon">✦</span><span><strong>实时配色</strong><small id="recommend-label">已根据配图匹配 · 海盐</small></span><span class="auto-palette" id="auto-palette"><i></i><i></i><i></i><i></i></span></button>
+        <button class="recommend-theme" id="recommend-theme"><span class="recommend-icon">自动</span><span><strong>实时配色</strong><small id="recommend-label">已根据配图匹配 · 海盐</small></span><span class="auto-palette" id="auto-palette"><i></i><i></i><i></i><i></i></span></button>
         <fieldset class="theme-fieldset"><div class="legend-row"><legend>颜色主题</legend><button type="button" id="theme-toggle">查看全部 18 个</button></div><div class="theme-list" id="theme-control">
           <button class="theme-swatch coastal active" data-theme="coastal"><span>海盐</span></button><button class="theme-swatch ink" data-theme="ink"><span>墨夜</span></button><button class="theme-swatch paper" data-theme="paper"><span>暖纸</span></button><button class="theme-swatch film" data-theme="film"><span>胶片</span></button><button class="theme-swatch berry" data-theme="berry"><span>莓果</span></button><button class="theme-swatch jade" data-theme="jade"><span>青岚</span></button>
           <button class="theme-swatch sky theme-extra" data-theme="sky"><span>天光</span></button><button class="theme-swatch lilac theme-extra" data-theme="lilac"><span>鸢尾</span></button><button class="theme-swatch sunrise theme-extra" data-theme="sunrise"><span>晨曦</span></button><button class="theme-swatch moss theme-extra" data-theme="moss"><span>苔原</span></button><button class="theme-swatch sand theme-extra" data-theme="sand"><span>沙丘</span></button><button class="theme-swatch slate theme-extra" data-theme="slate"><span>岩灰</span></button><button class="theme-swatch coral theme-extra" data-theme="coral"><span>珊瑚</span></button><button class="theme-swatch cobalt theme-extra" data-theme="cobalt"><span>钴蓝</span></button><button class="theme-swatch lime theme-extra" data-theme="lime"><span>青柠</span></button><button class="theme-swatch midnight theme-extra" data-theme="midnight"><span>午夜</span></button><button class="theme-swatch rose theme-extra" data-theme="rose"><span>蔷薇</span></button><button class="theme-swatch mono theme-extra" data-theme="mono"><span>黑白</span></button>
@@ -87,6 +95,6 @@
     </section>
     <section class="recent compact-history" id="recent" aria-labelledby="recent-title"><div class="section-head"><div><h2 id="recent-title">最近生成</h2><p>继续编辑你做过的卡片</p></div><button id="clear-recent">清空记录</button></div><div class="recent-grid"><button class="recent-card recent-web" data-preset="web"><span>网页</span><strong>留白，是设计中最有力的声音</strong><small>MONOCLE.COM</small></button><button class="recent-card recent-x" data-preset="x"><span>𝕏</span><strong>Good design is as little design as possible.</strong><small>@designnotes</small></button><button class="recent-card recent-instagram" data-preset="xiaohongshu"><span>RED</span><strong>週末，在城市里收集光影。</strong><small>小红书</small></button></div></section>
   </main>
-  <div class="toast" id="toast" role="status" aria-live="polite"></div><script type="module" src="./app.js?v=33"></script>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div><script type="module" src="./app.js?v=34"></script>
 </body>
 </html>

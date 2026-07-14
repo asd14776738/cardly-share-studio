@@ -167,6 +167,23 @@ const descriptionInput = qs('#card-description');
 const urlInput = qs('#source-url');
 const authorInput = qs('#card-author');
 
+function setMobilePanel(panel, { scroll = true } = {}) {
+  if (!['content', 'preview', 'style'].includes(panel)) return;
+  document.body.dataset.mobilePanel = panel;
+  qsa('[data-mobile-panel-target]').forEach(button => {
+    const active = button.dataset.mobilePanelTarget === panel;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  if (scroll && matchMedia('(max-width: 760px)').matches) {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+}
+
+qsa('[data-mobile-panel-target]').forEach(button => {
+  button.addEventListener('click', () => setMobilePanel(button.dataset.mobilePanelTarget));
+});
+
 function showToast(message) {
   const toast = qs('#toast');
   toast.textContent = message;
@@ -590,6 +607,7 @@ qs('#generate-button').addEventListener('click', async () => {
     } else {
       showToast(metadata?.title ? '已提取公开内容，可继续编辑' : '未找到公开内容，可手动编辑卡片');
     }
+    setMobilePanel('preview');
   } catch {
     showToast('暂时无法提取该链接，请重试或上传截图');
   } finally {

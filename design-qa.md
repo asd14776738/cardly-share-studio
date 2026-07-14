@@ -1,56 +1,83 @@
-# Cardly v28 Design QA
+# Cardly v34 Design QA
 
-- Source visual truth: `../audit-v28/reference-7-image-layout.png`
-- Rendered implementation: `../audit-v28/browser-7-card.png`
-- Focused implementation crop: `../audit-v28/browser-gallery.png`
-- Full-view comparison: `../audit-v28/comparison.png`
-- Focused comparison: `../audit-v28/gallery-comparison.jpg`
-- Desktop viewport: 1440 x 1100
-- Mobile viewport: 390 x 844
-- State: automatic ratio, seven-image social post, editorial card layout
-- Browser: isolated Chrome CDP fallback because the in-app browser tool was unavailable
+**Source visual truth path**
+
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v34/desktop-before-after.jpg
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v34/mobile-before-after.jpg
+- Reference direction: official 小作卡片 listing and Poet.so product page
+
+**Implementation screenshot path**
+
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v34/desktop-content.png
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v34/desktop-styled.png
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v34/mobile-content.png
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v34/mobile-preview.png
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v34/mobile-style.png
+
+**Viewport and state**
+
+- Desktop: 1600 × 1000, default content and styled 4:5 states
+- Mobile: 390 × 844, Content / Preview / Style states
+
+**Full-view comparison evidence**
+
+- Desktop before/after comparison confirms a more stable stage, stronger link-first hierarchy, narrower side panels, and quieter controls.
+- Mobile before/after comparison confirms the editor is above the fold and the preview no longer blocks task entry.
+
+**Focused region comparison evidence**
+
+- Mobile workspace switcher, URL block, preview toolbar, theme controls, and desktop panel headings were inspected at native screenshot resolution.
+- The first pass exposed a content-heading collision on desktop and retained scroll offset when switching mobile modes.
 
 **Findings**
 
-- No remaining P0, P1, or P2 mismatch in the scoped media-gallery composition.
-- The reference uses six equal square thumbnails in a 3 x 2 grid followed by one full-width 3:1 hero. Cardly now uses the same composition.
-- Desktop geometry: six 131 x 131 thumbnails, 8 px gaps, and one 410 x 137 hero.
-- Mobile geometry: six 84 x 84 thumbnails, 8 px gaps, and one 268 x 89 hero.
-- No horizontal overflow was found at either viewport.
+- [P3] Some secondary utility targets remain below 40 px.
+  Location: preview zoom controls and a few tertiary style utilities.
+  Evidence: desktop metrics report 14 visible targets under 40 px; mobile Style reports 8.
+  Impact: low-frequency controls are slightly less forgiving than the new primary controls.
+  Follow-up: raise zoom and tertiary utility hit areas to 40–44 px without increasing visible chrome.
 
 **Required Fidelity Surfaces**
 
-- Fonts and typography: card typography is unchanged; the scoped media-grid change introduces no wrapping or hierarchy regression.
-- Spacing and layout rhythm: gallery gaps are consistently 8 px, all grid columns align, and no incomplete row leaves a blank region.
-- Colors and visual tokens: existing Cardly theme tokens are preserved.
-- Image quality and asset fidelity: source images remain real raster assets; thumbnails use intentional cover crops and the hero uses a wide crop matching the reference.
-- Copy and content: unchanged.
+- Fonts and typography: passed. UI hierarchy is clearer; card title/body weights are now visibly distinct and Chinese fallback stacks remain intact.
+- Spacing and layout rhythm: passed. Desktop columns and mobile task modes align consistently; first-pass heading collision was fixed.
+- Colors and visual tokens: passed. Warm neutrals and ink active states replace the previous bright-blue-heavy chrome while preserving content themes.
+- Image quality and asset fidelity: passed for the default state. Original platform assets and extracted imagery remain source-backed; no new placeholder asset was introduced.
+- Copy and content: passed. Existing Chinese labels and platform names remain accurate; Content tuning and 18+ platform disclosure improve scanability.
 
-**Primary Interactions Tested**
+**Primary interactions tested**
 
-- Uploaded seven images through the real file-input flow.
-- Confirmed automatic layout selection after image decoding.
-- Confirmed desktop and mobile responsive geometry.
-- Confirmed the same layout planner is exercised by PNG export unit coverage.
-- Browser console exceptions checked: none.
+- Mobile Content / Preview / Style switching
+- Source tab selection
+- Theme selection
+- 4:5 ratio selection
+- Preview state update
+- Static build and all adapter/layout/palette/link/hashtag/icon tests
 
-**Comparison History**
+**Console errors checked**
 
-1. Initial issue (P1): seven images rendered as a 3-column grid with a single orphan tile in the last row, leaving a large blank area.
-2. Fix: added a remainder-aware featured layout. Counts 7 and 10 render complete 3-column rows plus a full-width hero; counts 8 and 11 render complete rows plus two balanced wide tiles.
-3. Post-fix evidence: `../audit-v28/gallery-comparison.jpg` shows the reference and implementation with the same 3 x 2 + hero hierarchy. Desktop and mobile geometry checks show no overflow.
+- Final capture: none.
+
+**Comparison history**
+
+1. First pass: P1 desktop heading/subcopy collision; P2 mobile Style mode opened with retained scroll offset.
+2. Fixes: restored a 48 px heading block and reset mobile mode switching to document top with non-animated scrolling.
+3. Post-fix evidence: desktop heading is separated correctly; all mobile modes begin at y=110 under the sticky workspace tabs; final console error list is empty.
 
 **Implementation Checklist**
 
-- [x] Match the seven-image reference composition.
-- [x] Eliminate orphan rows for image counts 1 through 12.
-- [x] Keep preview and PNG export on the same layout planner.
-- [x] Verify desktop and mobile layouts.
-- [x] Verify console errors.
-- [x] Add regression tests.
+- [x] Link-first desktop hierarchy
+- [x] Stable three-column creator shell
+- [x] Mobile workspace modes
+- [x] Automatic mobile Preview handoff after extraction
+- [x] Collapsible content/platform sections
+- [x] Warm-neutral premium token pass
+- [x] Post-fix visual recapture
+- [x] Automated test suite
 
 **Follow-up Polish**
 
-- None required for this scope.
+- Increase tertiary utility hit areas without adding visual weight.
+- Consider a dedicated mobile recent-history mode instead of rendering history below the active workspace.
 
 final result: passed
