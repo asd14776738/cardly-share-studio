@@ -3,6 +3,7 @@ import { buildAutoMediaLayout, chooseMediaLayout, fixedMediaColumns } from './me
 import { buildContentPalette, summarizeImagePixels } from './palette-engine.js';
 import { formatSourceLink } from './source-link.js';
 import { mergeHashtags, splitHashtags } from './hashtags.js';
+import { HISTORY_LIMIT, createHistorySnapshot, normalizeHistoryItems, formatHistoryTime } from './history-store.js';
 
 const platformIcons = {
   web: '/assets/icons/web.svg',
@@ -166,6 +167,206 @@ const titleInput = qs('#card-title');
 const descriptionInput = qs('#card-description');
 const urlInput = qs('#source-url');
 const authorInput = qs('#card-author');
+
+const HISTORY_DB_NAME = 'cardly-history';
+const HISTORY_STORE_NAME = 'cards';
+let historyDatabasePromise = null;
+let activeHistoryId = null;
+let historyAutosaveTimer = null;
+
+function openHistoryDatabase() {
+  if (!('indexedDB' in window)) return Promise.reject(new Error('IndexedDB unavailable'));
+  if (historyDatabasePromise) return historyDatabasePromise;
+  historyDatabasePromise = new Promise((resolve, reject) => {
+    const request = indexedDB.open(HISTORY_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const database = request.result;
+      if (!database.objectStoreNames.contains(HISTORY_STORE_NAME)) database.createObjectStore(HISTORY_STORE_NAME, { keyPath: 'id' });
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error('History database failed'));
+  });
+  return historyDatabasePromise;
+}
+
+function waitForTransaction(transaction) {
+  return new Promise((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error || new Error('History transaction failed'));
+    transaction.onabort = () => reject(transaction.error || new Error('History transaction aborted'));
+  });
+}
+
+async function historyGetAll() {
+  const database = await openHistoryDatabase();
+  const transaction = database.transaction(HISTORY_STORE_NAME, 'readonly');
+  const request = transaction.objectStore(HISTORY_STORE_NAME).getAll();
+  const items = await new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result || []); request.onerror = () => reject(request.error); });
+  await waitForTransaction(transaction);
+  return items;
+}
+
+async function historyGet(id) {
+  const database = await openHistoryDatabase();
+  const transaction = database.transaction(HISTORY_STORE_NAME, 'readonly');
+  const request = transaction.objectStore(HISTORY_STORE_NAME).get(id);
+  const item = await new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result || null); request.onerror = () => reject(request.error); });
+  await waitForTransaction(transaction);
+  return item;
+}
+
+async function historyPut(item) {
+  const database = await openHistoryDatabase();
+  const transaction = database.transaction(HISTORY_STORE_NAME, 'readwrite');
+  transaction.objectStore(HISTORY_STORE_NAME).put(item);
+  await waitForTransaction(transaction);
+}
+
+async function historyDelete(id) {
+  const database = await openHistoryDatabase();
+  const transaction = database.transaction(HISTORY_STORE_NAME, 'readwrite');
+  transaction.objectStore(HISTORY_STORE_NAME).delete(id);
+  await waitForTransaction(transaction);
+}
+
+async function historyClear() {
+  const database = await openHistoryDatabase();
+  const transaction = database.transaction(HISTORY_STORE_NAME, 'readwrite');
+  transaction.objectStore(HISTORY_STORE_NAME).clear();
+  await waitForTransaction(transaction);
+}
+
+function historyPalette(entry) {
+  if (entry.theme === 'dynamic' && entry.dynamicTheme?.stops?.length >= 2) return entry.dynamicTheme;
+  return themeConfig[entry.theme] || themeConfig.coastal;
+}
+
+function createRecentCard(entry) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'recent-card history-card';
+  button.dataset.historyId = entry.id;
+  const palette = historyPalette(entry);
+  button.style.setProperty('--history-a', palette.stops?.[0] || '#e7e5df');
+  button.style.setProperty('--history-b', palette.stops?.[1] || palette.stops?.[0] || '#f5f3ee');
+  button.style.setProperty('--history-text', palette.text || '#17191e');
+
+  const meta = document.createElement('span');
+  meta.className = 'recent-card-meta';
+  const platformIcon = document.createElement('img');
+  platformIcon.className = 'recent-platform-icon';
+  platformIcon.src = entry.icon || platformIcons[entry.platform] || platformIcons[entry.source] || platformIcons.web;
+  platformIcon.alt = '';
+  const platformName = document.createElement('span');
+  platformName.textContent = entry.sourceLabel || sourceData[entry.source]?.name || '网页';
+  const time = document.createElement('time');
+  time.dateTime = new Date(entry.updatedAt).toISOString();
+  time.textContent = formatHistoryTime(entry.updatedAt);
+  meta.append(platformIcon, platformName, time);
+
+  const title = document.createElement('strong');
+  title.textContent = entry.title || entry.description?.slice(0, 32) || '未命名卡片';
+  const footer = document.createElement('small');
+  footer.textContent = entry.author || entry.sourceLabel || 'Cardly';
+  button.append(meta, title, footer);
+
+  const imageSource = (entry.images || []).find(Boolean) || entry.image;
+  if (imageSource) {
+    const image = document.createElement('img');
+    image.className = 'recent-thumb';
+    image.src = imageSource;
+    image.alt = '';
+    image.loading = 'lazy';
+    image.addEventListener('error', () => { image.remove(); button.classList.add('no-thumb'); }, { once: true });
+    button.append(image);
+  } else button.classList.add('no-thumb');
+  return button;
+}
+
+function renderHistoryEmpty(grid) {
+  const empty = document.createElement('div');
+  empty.className = 'recent-empty';
+  const title = document.createElement('strong');
+  title.textContent = '还没有历史作品';
+  const description = document.createElement('span');
+  description.textContent = '生成、编辑或导出后会自动保存在这里';
+  empty.append(title, description);
+  grid.replaceChildren(empty);
+}
+
+async function renderRecentHistory() {
+  const grid = qs('#recent-grid');
+  const clearButton = qs('#clear-recent');
+  try {
+    const entries = normalizeHistoryItems(await historyGetAll());
+    grid.classList.toggle('is-empty', !entries.length);
+    clearButton.hidden = !entries.length;
+    if (!entries.length) return renderHistoryEmpty(grid);
+    grid.replaceChildren(...entries.map(createRecentCard));
+  } catch {
+    grid.classList.add('is-empty');
+    clearButton.hidden = true;
+    renderHistoryEmpty(grid);
+  }
+}
+
+async function persistCurrentCard({ silent = false } = {}) {
+  const snapshot = createHistorySnapshot(state, { id: activeHistoryId });
+  try {
+    await historyPut(snapshot);
+  } catch {
+    const compact = { ...snapshot, images: snapshot.images.filter(src => !src.startsWith('data:')).slice(0, 4) };
+    compact.image = compact.images[0] || '';
+    try { await historyPut(compact); }
+    catch { if (!silent) showToast('当前浏览器无法保存历史记录'); return false; }
+    if (!silent) showToast('作品已保存，本地大图未写入历史');
+  }
+  activeHistoryId = snapshot.id;
+  const all = (await historyGetAll()).sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0));
+  await Promise.all(all.slice(HISTORY_LIMIT).map(item => historyDelete(item.id)));
+  await renderRecentHistory();
+  return true;
+}
+
+function scheduleHistoryAutosave() {
+  clearTimeout(historyAutosaveTimer);
+  historyAutosaveTimer = setTimeout(() => void persistCurrentCard({ silent: true }), 700);
+}
+
+async function restoreHistoryEntry(id) {
+  const entry = await historyGet(id).catch(() => null);
+  if (!entry) return showToast('这条历史记录已不存在');
+  activeHistoryId = entry.id;
+  const source = sourceData[entry.source] ? entry.source : 'web';
+  Object.assign(state, defaults, entry, {
+    source,
+    platform: entry.platform || source,
+    images: Array.isArray(entry.images) ? entry.images.filter(Boolean).slice(0, 12) : [],
+    imageColors: {},
+  });
+  state.image = state.images[0] || entry.image || '';
+  urlInput.value = state.url || '';
+  titleInput.value = state.title || '';
+  descriptionInput.value = state.description || '';
+  authorInput.value = state.author || '';
+  selectSource(source, false);
+  qs('#font-control').value = state.font || 'sans';
+  qs('#radius-control').value = state.radius;
+  qs('#padding-control').value = state.padding;
+  qs('#radius-value').textContent = state.radius;
+  qs('#padding-value').textContent = state.padding;
+  qsa('#ratio-control button').forEach(item => item.classList.toggle('active', item.dataset.ratio === state.ratio));
+  qsa('#layout-control button').forEach(item => item.classList.toggle('active', item.dataset.layout === state.layout));
+  qsa('.theme-swatch').forEach(item => item.classList.toggle('active', state.colorMode === 'manual' && item.dataset.theme === state.theme));
+  const status = qs('#extract-status');
+  status.hidden = false;
+  status.querySelector('strong').textContent = '已恢复';
+  qs('#extract-summary').textContent = formatHistoryTime(entry.updatedAt) || '历史作品';
+  refreshContentPalette();
+  if (matchMedia('(max-width: 760px)').matches) setMobilePanel('preview');
+  else qs('#studio').scrollIntoView({ block: 'start', behavior: 'smooth' });
+  showToast('已恢复历史作品，可继续编辑');
+}
 
 function setMobilePanel(panel, { scroll = true } = {}) {
   if (!['content', 'preview', 'style', 'history'].includes(panel)) return;
@@ -424,7 +625,10 @@ function selectSource(source, applyPreset = true) {
   refreshContentPalette();
 }
 
-qsa('.source-tab').forEach(tab => tab.addEventListener('click', () => selectSource(tab.dataset.source)));
+qsa('.source-tab').forEach(tab => tab.addEventListener('click', () => {
+  activeHistoryId = null;
+  selectSource(tab.dataset.source);
+}));
 
 qs('#ratio-control').addEventListener('click', event => {
   const button = event.target.closest('button[data-ratio]');
@@ -510,6 +714,7 @@ qs('#image-upload').addEventListener('change', async event => {
   state.image = state.images[0];
   state.imageColors = {};
   refreshContentPalette();
+  await persistCurrentCard({ silent: true });
   showToast(`已载入 ${state.images.length} 张图片，版式已自动调整`);
 });
 
@@ -526,6 +731,7 @@ qs('#generate-button').addEventListener('click', async () => {
   urlInput.value = value;
   button.classList.add('loading');
   button.textContent = '正在生成…';
+  activeHistoryId = null;
   state.url = value;
   state.platform = state.source;
   state.contentStatus = 'ok';
@@ -611,6 +817,7 @@ qs('#generate-button').addEventListener('click', async () => {
     } else {
       showToast(metadata?.title ? '已提取公开内容，可继续编辑' : '未找到公开内容，可手动编辑卡片');
     }
+    await persistCurrentCard({ silent: true });
     setMobilePanel('preview');
   } catch {
     showToast('暂时无法提取该链接，请重试或上传截图');
@@ -622,6 +829,7 @@ qs('#generate-button').addEventListener('click', async () => {
 });
 
 qs('#reset-button').addEventListener('click', () => {
+  activeHistoryId = null;
   Object.assign(state, defaults, { images: [...defaults.images] });
   urlInput.value = defaults.url;
   titleInput.value = defaults.title;
@@ -638,16 +846,35 @@ qs('#reset-button').addEventListener('click', () => {
   showToast('已恢复默认样式');
 });
 
-qsa('.recent-card').forEach(item => item.addEventListener('click', () => {
-  const preset = item.dataset.preset;
-  if (sourceData[preset]) selectSource(preset);
-  document.querySelector('#studio').scrollIntoView({ behavior: 'smooth' });
-}));
+qs('#recent-grid').addEventListener('click', event => {
+  const cardButton = event.target.closest('[data-history-id]');
+  if (cardButton) void restoreHistoryEntry(cardButton.dataset.historyId);
+});
 
-qs('#clear-recent').addEventListener('click', () => {
-  const grid = qs('.recent-grid');
-  grid.innerHTML = '';
-  grid.classList.add('is-empty');
+qs('#clear-recent').addEventListener('click', async event => {
+  const button = event.currentTarget;
+  if (button.dataset.confirm !== 'true') {
+    button.dataset.confirm = 'true';
+    button.textContent = '再次点击清空';
+    clearTimeout(button.confirmTimer);
+    button.confirmTimer = setTimeout(() => { button.dataset.confirm = 'false'; button.textContent = '清空记录'; }, 3000);
+    return;
+  }
+  await historyClear().catch(() => null);
+  activeHistoryId = null;
+  button.dataset.confirm = 'false';
+  button.textContent = '清空记录';
+  await renderRecentHistory();
+  showToast('历史记录已清空');
+});
+
+qs('#studio').addEventListener('input', event => {
+  if (event.target === urlInput) state.url = extractUrlFromShare(urlInput.value) || state.url;
+  scheduleHistoryAutosave();
+});
+qs('#studio').addEventListener('change', () => scheduleHistoryAutosave());
+qs('#studio').addEventListener('click', event => {
+  if (event.target.closest('[data-source],[data-ratio],[data-layout],[data-theme],#recommend-theme')) scheduleHistoryAutosave();
 });
 
 function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
@@ -1041,6 +1268,7 @@ async function downloadPreviewCard() {
     link.href = URL.createObjectURL(blob);
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 1200);
+    await persistCurrentCard({ silent: true });
     showToast('已按实时预览导出高清 PNG');
   } catch (error) {
     console.error(error);
@@ -1052,3 +1280,4 @@ async function downloadPreviewCard() {
 
 qsa('[data-download]').forEach(button => button.addEventListener('click', downloadPreviewCard));
 updateCard();
+void renderRecentHistory();

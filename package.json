@@ -5,7 +5,7 @@
   "scripts": {
     "start": "npx --yes serve . -l 4173",
     "build": "node build.mjs",
-    "test": "node build.mjs && node tests/adapter-fixtures.mjs && node tests/reading-time.mjs && node tests/media-layout.mjs && node tests/palette-engine.mjs && node tests/source-link.mjs && node tests/hashtags.mjs && node tests/platform-icons.mjs"
+    "test": "node build.mjs && node tests/adapter-fixtures.mjs && node tests/reading-time.mjs && node tests/media-layout.mjs && node tests/palette-engine.mjs && node tests/source-link.mjs && node tests/hashtags.mjs && node tests/platform-icons.mjs && node tests/history-store.mjs"
   },
   "type": "module"
 }

@@ -4,11 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#f4f6f9" />
+  <link rel="icon" href="data:," />
   <meta name="description" content="把网页与社交内容链接变成精美、可编辑的分享卡片。" />
   <title>Cardly — 链接卡片生成器</title>
   <link rel="preconnect" href="https://images.unsplash.com" />
-  <link rel="stylesheet" href="./styles.css?v=35" />
-  <link rel="stylesheet" href="./studio-v3.css?v=35" />
+  <link rel="stylesheet" href="./styles.css?v=36" />
+  <link rel="stylesheet" href="./studio-v3.css?v=36" />
 </head>
 <body class="studio-app" data-mobile-panel="content">
   <header class="topbar app-topbar">
@@ -94,8 +95,8 @@
         <button class="button button-blue style-export" data-download>导出高清 PNG<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9m0 0 3.5-3.5M10 12 6.5 8.5M4 14.5V17h12v-2.5"/></svg></button>
       </aside>
     </section>
-    <section class="recent compact-history" id="recent" aria-labelledby="recent-title"><div class="section-head"><div><h2 id="recent-title">最近生成</h2><p>继续编辑你做过的卡片</p></div><button id="clear-recent">清空记录</button></div><div class="recent-grid"><button class="recent-card recent-web" data-preset="web"><span>网页</span><strong>留白，是设计中最有力的声音</strong><small>MONOCLE.COM</small></button><button class="recent-card recent-x" data-preset="x"><span>𝕏</span><strong>Good design is as little design as possible.</strong><small>@designnotes</small></button><button class="recent-card recent-instagram" data-preset="xiaohongshu"><span>RED</span><strong>週末，在城市里收集光影。</strong><small>小红书</small></button></div></section>
+    <section class="recent compact-history" id="recent" aria-labelledby="recent-title"><div class="section-head"><div><h2 id="recent-title">最近生成</h2><p>自动保存，随时回到上次编辑</p></div><button id="clear-recent" hidden>清空记录</button></div><div class="recent-grid is-empty" id="recent-grid"><div class="recent-empty"><strong>还没有历史作品</strong><span>生成、编辑或导出后会自动保存在这里</span></div></div></section>
   </main>
-  <div class="toast" id="toast" role="status" aria-live="polite"></div><script type="module" src="./app.js?v=35"></script>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div><script type="module" src="./app.js?v=36"></script>
 </body>
 </html>

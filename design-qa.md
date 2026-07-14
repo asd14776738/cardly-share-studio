@@ -1,76 +1,88 @@
-# Cardly v35 Design QA
+# Cardly v36 Design QA
 
 **Source visual truth path**
 
-- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v35/desktop-targets-before-after.jpg
-- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v35/history-before-after.jpg
-- Prior accepted v34 visual system and mobile task-switching pattern
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v36/01-mobile-history-fixtures.png
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v36/02-mobile-after-restore-click.png
+- Existing Cardly v35 warm-neutral visual system and four-mode mobile workspace
 
 **Implementation screenshot path**
 
-- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v35/desktop.png
-- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v35/mobile-content.png
-- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v35/mobile-preview.png
-- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v35/mobile-style.png
-- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v35/mobile-history.png
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v36/01-mobile-empty-history.png
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v36/02-mobile-real-history.png
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v36/03-mobile-restored-preview.png
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v36/04-mobile-persisted-after-reload.png
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v36/05-mobile-clear-confirm.png
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v36/06-mobile-cleared.png
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v36/07-desktop-real-history.png
 
 **Viewport and state**
 
-- Desktop: 1600 × 1000, default Content state
-- Mobile: 390 × 844, Content / Preview / Style / History states
+- Mobile: 390 × 844 for empty, saved, restored, persisted, clear-confirm, and cleared states.
+- Responsive metrics: 360 × 800, 390 × 844, 760 × 900, and 1440 × 1000.
+- Desktop visual capture: 1440 × 1000 with one real history item.
 
 **Full-view comparison evidence**
 
-- The desktop before/after board shows the same visual hierarchy and card scale after target-size changes; no column, typography, or preview regression is visible.
-- The mobile History comparison shows the previous blank transition and hidden section replaced by an explicit fourth workspace mode.
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v36/before-after-comparison.jpg places the two baseline mobile History states beside the real saved and restored states at the same 390 × 844 viewport.
+- Intentional content difference: hardcoded fixtures are removed by design; the comparison checks hierarchy, surface treatment, density, navigation, and visible restore feedback rather than pixel-identical content.
 
 **Focused region comparison evidence**
 
-- Inspected the desktop preview toolbar, style segmented controls, footer source action, mobile workspace switcher, History header, Clear history action, and recent-card stack at native screenshot resolution.
+- C:/Users/admin/.codex/visualizations/2026/07/13/019f59be-0db9-7dd2-b2bc-c7b7091d8705/cardly-v36/focused-history-comparison.jpg compares the History header and first card region. The implementation preserves the existing warm-neutral frame while replacing generic labels with actual source, relative time, author, title, and image.
 
 **Findings**
 
 - No actionable P0, P1, or P2 findings remain in the captured states.
-- Accepted product constraint: auto-height cards may require vertical scrolling in Preview because preserving the complete generated card is more important than forcing it into one viewport.
+- Accepted constraint: a single desktop item occupies the first track of the three-column recent grid; this preserves predictable alignment as the history grows and is not a broken empty column state.
 
 **Required Fidelity Surfaces**
 
-- Fonts and typography: passed. Existing font stacks, hierarchy, wrapping, and optical weights are unchanged and remain coherent across all modes.
-- Spacing and layout rhythm: passed. Four mobile tabs fit at 390 px with no clipping; History begins directly below the persistent tabs; desktop control resizing does not shift the grid.
-- Colors and visual tokens: passed. The warm-neutral and ink system remains consistent; active History uses the same restrained surface treatment as the other modes.
-- Image quality and asset fidelity: passed. Original platform icons and extracted source image remain intact, sharp, and correctly scaled.
-- Copy and content: passed. History is now named where users look for workspace modes; no duplicate or placeholder helper copy was introduced.
-- Accessibility and targets: passed for the captured visible states. DOM metrics report zero visible interactive targets below 40 px and zero horizontal overflow.
+- Fonts and typography: passed. Existing Cardly font stacks are preserved. History metadata is optically secondary, the title remains the primary scan target, two-line truncation prevents card growth, and the clear-confirm copy does not disturb hierarchy.
+- Spacing and layout rhythm: passed. Mobile cards use a stable text/image split, 14 px radius, and 20 px inset; 360–760 px widths reflow without clipping. Desktop retains the existing three-track rhythm.
+- Colors and visual tokens: passed. Each saved item uses its actual theme stops and text token. Empty and destructive-confirm states use the existing warm-neutral and muted-red system without introducing a competing accent.
+- Image quality and asset fidelity: passed. The first real content image is used with object-fit cover and a bounded crop; platform icons are existing source assets, not placeholders or generated approximations. Failed thumbnails degrade to a text-only card.
+- Copy and content: passed. “自动保存，随时回到上次编辑”, “已恢复”, and the two-step clear wording describe real behavior and replace the misleading fixture interface.
+- States and interactions: passed. Empty, autosaved, restored, persisted-after-reload, confirm-clear, cleared, desktop, and keyboard-restore states were exercised.
+- Accessibility: passed for the tested scope. No visible target below 40 px, no horizontal overflow, native button semantics restore with Enter, reduced-motion handling remains intact, and the final run reports no console errors.
 
 **Primary interactions tested**
 
-- Mobile Content / Preview / Style / History switching
-- Brand returns mobile users from History to Content
-- Desktop and mobile preview rendering
-- Full adapter, reading-time, media-layout, palette, source-link, hashtag, and platform-icon test suite
+- Autosave after content/style edits
+- Restoring all saved content and style state
+- Mobile History → Preview transition
+- IndexedDB persistence across reload
+- Two-step clear confirmation
+- Native Enter-key activation
+- 360 / 390 / 760 / 1440 responsive measurements
+- Complete existing adapter, media-layout, palette, source-link, hashtag, icon, and new history-store test suite
 
 **Console errors checked**
 
-- Final capture: none.
+- Final browser capture: none.
 
 **Comparison history**
 
-1. Baseline: 14 desktop and 2 mobile visible targets below 40 px; History existed below the active mobile workspace.
-2. Fixes: enlarged utility hit areas, added History to the switcher, and conditionally renders only the active mobile workspace or History surface.
-3. Post-fix evidence: every captured state reports zero sub-40 px targets; mobile History has a document height of 844 px; no console errors.
+1. Baseline: three fake cards and no visible mobile result after activation.
+2. Fixes: real IndexedDB records, actual saved metadata and imagery, mobile restore-to-Preview, honest empty state, persistent reload behavior, and two-step clearing.
+3. Polish pass: suppressed the obsolete pseudo-empty copy and added an inline favicon to remove the only local 404.
+4. Post-fix evidence: the current-run comparison boards show the new card hierarchy and visible restoration; metrics prove persistence, keyboard restoration, no sub-40 px targets, no overflow, and no console errors.
 
 **Implementation Checklist**
 
-- [x] Dedicated mobile History mode
-- [x] Inactive History hidden from active editor modes
-- [x] Brand returns to Content on mobile
-- [x] 40 px minimum visible target size
-- [x] Desktop layout regression check
-- [x] Four-state mobile screenshot check
-- [x] Automated test suite
+- [x] Remove fixture history
+- [x] Persist real content and styling
+- [x] Update active record without duplicates
+- [x] Use actual source icon, palette, timestamp, author, title, and image
+- [x] Restore directly into mobile Preview
+- [x] Persist across reload
+- [x] Two-step destructive action
+- [x] Keyboard and responsive checks
+- [x] Automated history-store tests
+- [x] Current-run full and focused comparison evidence
 
 **Follow-up Polish**
 
-- Once recent cards are backed by real persistence, add actual thumbnails, timestamps, and search/filtering rather than expanding the current fixture-only interface.
+- P3: when users accumulate many works, optional search or source filters can be added without changing the current card model.
 
 final result: passed
