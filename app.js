@@ -7,6 +7,7 @@ import { HISTORY_LIMIT, createHistorySnapshot, normalizeHistoryItems, formatHist
 import { readActiveDraftId, writeActiveDraftId, clearActiveDraftId, saveStatusText } from './draft-session.js';
 import { loadingExtractFeedback, feedbackForMetadata, feedbackForFailure } from './extract-feedback.js';
 import { sourceInputHint, isGenerateShortcut } from './source-input.js';
+import { summarizePreviewAssets } from './export-readiness.js';
 
 const platformIcons = {
   web: '/assets/icons/web.svg',
@@ -1355,10 +1356,52 @@ async function rasterizePreviewCard() {
   }
 }
 
+let exportInProgress = false;
+
+async function waitForPreviewAssets(element, timeout = 3200) {
+  const images = [...element.querySelectorAll('#media-gallery img')].filter(image => image.currentSrc || image.src);
+  const pending = images.filter(image => !image.complete);
+  if (pending.length) {
+    await Promise.race([
+      Promise.all(pending.map(image => new Promise(resolve => {
+        image.addEventListener('load', resolve, { once: true });
+        image.addEventListener('error', resolve, { once: true });
+      }))),
+      new Promise(resolve => setTimeout(resolve, timeout)),
+    ]);
+  }
+  return summarizePreviewAssets(images);
+}
+
+function setExportBusy(buttons, busy) {
+  buttons.forEach(button => {
+    if (busy) {
+      button.dataset.idleMarkup = button.innerHTML;
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+      button.setAttribute('aria-label', '正在生成 PNG');
+      button.innerHTML = '<span>正在生成 PNG…</span><span class="button-spinner" aria-hidden="true"></span>';
+      return;
+    }
+    if (button.dataset.idleMarkup) button.innerHTML = button.dataset.idleMarkup;
+    delete button.dataset.idleMarkup;
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
+    button.removeAttribute('aria-label');
+  });
+}
+
 async function downloadPreviewCard() {
+  if (exportInProgress) return;
+  exportInProgress = true;
   const buttons = qsa('[data-download]');
-  buttons.forEach(button => button.disabled = true);
+  setExportBusy(buttons, true);
   try {
+    const readiness = await waitForPreviewAssets(qs('#share-card'));
+    if (!readiness.ready) {
+      showToast(readiness.failed ? '图片加载失败，请重新提取或更换图片' : '图片仍在加载，请稍后再导出');
+      return;
+    }
     const blob = await rasterizePreviewCard();
     const link = document.createElement('a');
     link.download = `cardly-${state.ratio}-${Date.now()}.png`;
@@ -1371,7 +1414,8 @@ async function downloadPreviewCard() {
     console.error(error);
     showToast('导出失败，请重试');
   } finally {
-    buttons.forEach(button => button.disabled = false);
+    exportInProgress = false;
+    setExportBusy(buttons, false);
   }
 }
 

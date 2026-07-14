@@ -1211,3 +1211,8 @@ body.studio-app button { cursor: pointer; }
 /* v39: fast source recognition and keyboard generation */
 #source-hint[data-state="recognized"] { color: #52745f; font-weight: 650; }
 .generate-wide[aria-busy="true"] { cursor: wait; opacity: .82; }
+
+[data-download][aria-busy="true"]{cursor:progress;opacity:.82}
+.button-spinner{width:14px;height:14px;border:1.5px solid currentColor;border-right-color:transparent;border-radius:50%;animation:cardly-spin .7s linear infinite;flex:0 0 auto}
+@keyframes cardly-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.button-spinner{animation-duration:1.4s}}
