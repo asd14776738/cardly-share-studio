@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 
 await rm('dist', { recursive: true, force: true });
 await mkdir('dist/server', { recursive: true });
@@ -30,6 +30,10 @@ const files = {
   '/source-link.js': ['text/javascript; charset=utf-8', sourceLink],
   '/hashtags.js': ['text/javascript; charset=utf-8', hashtags],
 };
+
+for (const iconName of await readdir('assets/icons')) {
+  files['/assets/icons/' + iconName] = ['image/svg+xml; charset=utf-8', await readFile('assets/icons/' + iconName, 'utf8')];
+}
 
 const worker = workerTemplate.replace('__FILES__', JSON.stringify(files));
 await writeFile('dist/server/index.js', worker);

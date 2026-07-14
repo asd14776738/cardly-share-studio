@@ -7,8 +7,8 @@
   <meta name="description" content="把网页与社交内容链接变成精美、可编辑的分享卡片。" />
   <title>Cardly — 链接卡片生成器</title>
   <link rel="preconnect" href="https://images.unsplash.com" />
-  <link rel="stylesheet" href="./styles.css?v=32" />
-  <link rel="stylesheet" href="./studio-v3.css?v=32" />
+  <link rel="stylesheet" href="./styles.css?v=33" />
+  <link rel="stylesheet" href="./studio-v3.css?v=33" />
 </head>
 <body class="studio-app">
   <header class="topbar app-topbar">
@@ -21,11 +21,11 @@
       <aside class="editor-column content-panel" aria-labelledby="content-panel-title">
         <div class="panel-heading"><div><h1 id="content-panel-title">内容</h1><p>粘贴公开链接，自动提取正文与图片</p></div></div>
         <div class="source-tabs" role="tablist" aria-label="内容来源">
-          <button class="source-tab active" data-source="web" role="tab" aria-selected="true"><img src="https://cdn.simpleicons.org/safari/667085" alt="" />网页</button>
-          <button class="source-tab" data-source="weibo" role="tab" aria-selected="false"><img src="https://cdn.simpleicons.org/sinaweibo/E6162D" alt="" />微博</button>
-          <button class="source-tab" data-source="xiaohongshu" role="tab" aria-selected="false"><img src="https://cdn.simpleicons.org/xiaohongshu/FF2442" alt="" />小红书</button>
-          <button class="source-tab" data-source="x" role="tab" aria-selected="false"><img src="https://cdn.simpleicons.org/x/111111" alt="" />X</button>
-          <button class="source-tab" data-source="douyin" role="tab" aria-selected="false"><img src="https://cdn.simpleicons.org/tiktok/111111" alt="" />抖音</button>
+          <button class="source-tab active" data-source="web" role="tab" aria-selected="true"><img src="/assets/icons/web.svg" alt="" />网页</button>
+          <button class="source-tab" data-source="weibo" role="tab" aria-selected="false"><img src="/assets/icons/weibo.svg" alt="" />微博</button>
+          <button class="source-tab" data-source="xiaohongshu" role="tab" aria-selected="false"><img src="/assets/icons/xiaohongshu.svg" alt="" />小红书</button>
+          <button class="source-tab" data-source="x" role="tab" aria-selected="false"><img src="/assets/icons/x.svg" alt="" />X</button>
+          <button class="source-tab" data-source="douyin" role="tab" aria-selected="false"><img src="/assets/icons/douyin.svg" alt="" />抖音</button>
         </div>
         <div class="input-block">
           <label for="source-url">粘贴公开链接或整段分享口令</label>
@@ -41,19 +41,19 @@
         </div>
         <div class="upload-row"><div><strong>内容图片</strong><span id="image-count">可多选，自动排列</span></div><label class="upload-button" for="image-upload">添加图片</label><input id="image-upload" type="file" accept="image/*" multiple hidden /></div>
         <div class="platform-support"><span>支持平台</span><div class="platform-rail" aria-label="其他支持平台">
-          <span class="platform-chip" title="知乎"><img src="https://cdn.simpleicons.org/zhihu/1772F6" alt="知乎" /></span>
-          <span class="platform-chip" title="微信公众号"><img src="https://cdn.simpleicons.org/wechat/07C160" alt="微信" /></span>
-          <span class="platform-chip" title="即刻"><img src="https://www.google.com/s2/favicons?domain=web.okjike.com&sz=64" alt="即刻" /></span>
-          <span class="platform-chip" title="网易云音乐"><img src="https://cdn.simpleicons.org/neteasecloudmusic/E60026" alt="网易云音乐" /></span>
-          <span class="platform-chip" title="QQ 音乐"><img src="https://www.google.com/s2/favicons?domain=y.qq.com&sz=64" alt="QQ 音乐" /></span>
-          <span class="platform-chip" title="Instagram"><img src="https://cdn.simpleicons.org/instagram/E4405F" alt="Instagram" /></span>
-          <span class="platform-chip" title="Threads"><img src="https://cdn.simpleicons.org/threads/111111" alt="Threads" /></span>
-          <span class="platform-chip" title="Telegram"><img src="https://cdn.simpleicons.org/telegram/26A5E4" alt="Telegram" /></span>
-          <span class="platform-chip" title="豆瓣"><img src="https://cdn.simpleicons.org/douban/2D963D" alt="豆瓣" /></span>
-          <span class="platform-chip" title="Spotify"><img src="https://cdn.simpleicons.org/spotify/1ED760" alt="Spotify" /></span>
-          <span class="platform-chip" title="Apple Music"><img src="https://cdn.simpleicons.org/applemusic/FA243C" alt="Apple Music" /></span>
-          <span class="platform-chip" title="ChatGPT"><img src="https://www.google.com/s2/favicons?domain=chatgpt.com&sz=64" alt="ChatGPT" /></span>
-          <span class="platform-chip" title="Kimi"><img src="https://www.google.com/s2/favicons?domain=kimi.com&sz=64" alt="Kimi" /></span>
+          <span class="platform-chip" title="知乎"><img src="/assets/icons/zhihu.svg" alt="知乎" /></span>
+          <span class="platform-chip" title="微信公众号"><img src="/assets/icons/wechat.svg" alt="微信" /></span>
+          <span class="platform-chip" title="即刻"><img src="" data-platform-icon="jike" alt="即刻" /></span>
+          <span class="platform-chip" title="网易云音乐"><img src="/assets/icons/netease.svg" alt="网易云音乐" /></span>
+          <span class="platform-chip" title="QQ 音乐"><img src="/assets/icons/qqmusic.svg" alt="QQ 音乐" /></span>
+          <span class="platform-chip" title="Instagram"><img src="/assets/icons/instagram.svg" alt="Instagram" /></span>
+          <span class="platform-chip" title="Threads"><img src="/assets/icons/threads.svg" alt="Threads" /></span>
+          <span class="platform-chip" title="Telegram"><img src="/assets/icons/telegram.svg" alt="Telegram" /></span>
+          <span class="platform-chip" title="豆瓣"><img src="/assets/icons/douban.svg" alt="豆瓣" /></span>
+          <span class="platform-chip" title="Spotify"><img src="/assets/icons/spotify.svg" alt="Spotify" /></span>
+          <span class="platform-chip" title="Apple Music"><img src="/assets/icons/apple.svg" alt="Apple Music" /></span>
+          <span class="platform-chip" title="ChatGPT"><img src="/assets/icons/chatgpt.svg" alt="ChatGPT" /></span>
+          <span class="platform-chip" title="Kimi"><img src="/assets/icons/kimi.svg" alt="Kimi" /></span>
         </div></div>
       </aside>
       <section class="preview-column preview-panel" aria-labelledby="preview-title">
@@ -87,6 +87,6 @@
     </section>
     <section class="recent compact-history" id="recent" aria-labelledby="recent-title"><div class="section-head"><div><h2 id="recent-title">最近生成</h2><p>继续编辑你做过的卡片</p></div><button id="clear-recent">清空记录</button></div><div class="recent-grid"><button class="recent-card recent-web" data-preset="web"><span>网页</span><strong>留白，是设计中最有力的声音</strong><small>MONOCLE.COM</small></button><button class="recent-card recent-x" data-preset="x"><span>𝕏</span><strong>Good design is as little design as possible.</strong><small>@designnotes</small></button><button class="recent-card recent-instagram" data-preset="xiaohongshu"><span>RED</span><strong>週末，在城市里收集光影。</strong><small>小红书</small></button></div></section>
   </main>
-  <div class="toast" id="toast" role="status" aria-live="polite"></div><script type="module" src="./app.js?v=32"></script>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div><script type="module" src="./app.js?v=33"></script>
 </body>
 </html>
