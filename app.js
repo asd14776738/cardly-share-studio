@@ -900,12 +900,26 @@ qs('#generate-button').addEventListener('click', async () => {
   renderExtractFeedback(loadingExtractFeedback());
   const host = new URL(value).hostname.replace(/^www\./, '').toUpperCase();
   try {
-    const apiOrigin = window.location.hostname.endsWith('.github.io')
-      ? 'https://cardly-share-studio.zhangjingman1.chatgpt.site'
-      : '';
-    const response = await fetch(apiOrigin + '/api/extract?url=' + encodeURIComponent(value));
-    const metadata = await response.json().catch(() => null);
-    if (!response.ok) throw new Error(metadata?.detail || metadata?.error || '提取失败');
+    const apiOrigins = window.location.hostname.endsWith('.github.io')
+      ? [
+          'https://cardly.zhangjingman-cardly.workers.dev',
+          'https://cardly-share-studio.zhangjingman1.chatgpt.site',
+        ]
+      : [''];
+    let response;
+    let metadata;
+    let extractError;
+    for (const apiOrigin of apiOrigins) {
+      try {
+        response = await fetch(apiOrigin + '/api/extract?url=' + encodeURIComponent(value));
+        metadata = await response.json().catch(() => null);
+        if (response.ok) break;
+        extractError = new Error(metadata?.detail || metadata?.error || '提取失败');
+      } catch (error) {
+        extractError = error;
+      }
+    }
+    if (!response?.ok) throw extractError || new Error('提取失败');
 
     setActiveHistoryId(null);
     state.url = value;
