@@ -1,4 +1,4 @@
-name = 'cardly-share-studio-github'
+name = 'cardly'
 main = 'dist/server/index.js'
 compatibility_date = '2026-07-14'
 workers_dev = true
